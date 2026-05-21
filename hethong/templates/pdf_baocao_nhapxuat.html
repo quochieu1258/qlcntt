@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        h2 { text-align: center; color: #2c3e50; text-transform: uppercase; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; font-size: 14px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; font-size: 13px; }
+        th { background-color: #ecf0f1; font-weight: bold; text-align: center; }
+        .text-center { text-align: center; }
+        .bg-gray { background-color: #f9fafb; }
+        .text-green { color: #16a085; font-weight: bold; }
+        .text-red { color: #c0392b; font-weight: bold; }
+        .text-blue { color: #2980b9; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Báo Cáo Tổng Hợp Nhập Xuất Tồn</h2>
+    <p class="subtitle">
+        {% if tu_ngay or den_ngay %}
+            Thời gian: {{ tu_ngay|default:"..." }} đến {{ den_ngay|default:"..." }}
+        {% else %}
+            Toàn bộ thời gian (Tất cả dữ liệu)
+        {% endif %}
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Mã VT</th>
+                <th>Tên Vật Tư</th>
+                <th>Tồn Đầu</th>
+                <th>Tổng Nhập</th>
+                <th>Tổng Xuất</th>
+                <th>Tồn Cuối Kỳ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in bao_cao %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="text-center">{{ t.ma_vt }}</td>
+                <td>{{ t.ten_vt }}</td>
+                <td class="text-center bg-gray">{{ t.ton_dau }}</td>
+                <td class="text-center text-green">{% if t.nhap_ky > 0 %}+{{ t.nhap_ky }}{% else %}-{% endif %}</td>
+                <td class="text-center text-red">{% if t.xuat_ky > 0 %}-{{ t.xuat_ky }}{% else %}-{% endif %}</td>
+                <td class="text-center text-blue bg-gray">{{ t.ton_cuoi }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

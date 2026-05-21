@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo Thiết Bị Hư Hỏng{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Báo Cáo Thiết Bị Hư Hỏng (Chờ Thanh Lý)</h2>
+            <p class="text-gray-500 text-sm mt-1">Danh sách các thiết bị đã được kỹ thuật viên xác nhận không thể sửa chữa.</p>
+        </div>
+
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-gray-100 text-gray-800 px-6 py-2 rounded-full border border-gray-300 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Tổng cộng:</span> 
+            <span class="font-extrabold text-xl text-red-600">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">thiết bị hỏng</span>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày (Xác nhận hỏng)</label>
+                <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+                <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Khoa Phòng</label>
+                <select id="tim_khoa_phong" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                    <option value="">-- Tất cả khoa --</option>
+                    {% for kp in khoa_phongs %}<option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Loại thiết bị</label>
+                <select id="tim_loai_thiet_bi" name="loai_thiet_bi" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                    <option value="">-- Tất cả loại --</option>
+                    {% for loai in loai_choices %}<option value="{{ loai.0 }}" {% if loai_value == loai.0 %}selected{% endif %}>{{ loai.1 }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ khóa (Tên, Mã)</label>
+                <input type="text" name="q" value="{{ q_value }}" placeholder="Nhập tên..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2 border-t pt-4">
+            <a href="{% url 'bao_cao_thiet_bi_hong' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-6 rounded-lg text-sm transition"><i class="fas fa-undo mr-1"></i> Làm mới</a>
+            <button type="submit" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-8 rounded-lg text-sm transition"><i class="fas fa-search mr-1"></i> Lọc Báo Cáo</button>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead class="bg-gray-200 text-gray-700 uppercase text-xs font-bold border-b border-gray-300">
+                <tr>
+                    <th class="px-5 py-4 text-left">Mã TB</th>
+                    <th class="px-5 py-4 text-left">Tên Thiết Bị</th>
+                    <th class="px-5 py-4 text-left">Loại Thiết Bị</th>
+                    <th class="px-5 py-4 text-left">Sử dụng tại</th>
+                    <th class="px-5 py-4 text-center text-red-700 bg-red-50"><i class="fas fa-calendar-times mr-1"></i> Ngày Báo Hỏng</th>
+                    <th class="px-5 py-4 text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 divide-y divide-gray-200">
+                {% for tb in ds_tb_hong %}
+                <tr class="hover:bg-gray-50 transition duration-150 bg-gray-50/50">
+                    <td class="px-5 py-4 font-mono text-gray-500 border-l-4 border-gray-400">{{ tb.ma_thiet_bi|default:"---" }}</td>
+                    <td class="px-5 py-4 font-bold text-gray-800 line-through decoration-red-500/50">{{ tb.ten_thiet_bi }}</td>
+                    <td class="px-5 py-4"><span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs font-semibold">{{ tb.loai_thiet_bi }}</span></td>
+                    <td class="px-5 py-4 font-medium text-gray-600">{{ tb.khoa_phong.ten_khoa_phong|default:"---" }}</td>
+                    <td class="px-5 py-4 text-center font-bold text-red-600 bg-red-50/50">
+                        {{ tb.ngay_xac_nhan_hong|date:"d/m/Y"|default:"<span class='text-gray-400 text-xs font-normal'>Chưa xác định</span>"|safe }}
+                    </td>
+                    
+                    <td class="px-5 py-4 text-center flex justify-center space-x-3">
+                        <button onclick="xemLichSu('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}')" class="text-indigo-500 hover:text-indigo-700 transition" title="Xem lịch sử sửa chữa"><i class="fas fa-eye text-lg"></i></button>
+                        
+                        <a href="{% url 'sua_loi_hu_hong' tb.id %}" class="text-blue-500 hover:text-blue-700 transition" title="Sửa nội dung hư hỏng"><i class="fas fa-edit text-lg"></i></a>
+                        
+                        <a href="{% url 'huy_hong_han' tb.id %}" onclick="return confirm('Bạn có chắc muốn KHÔI PHỤC thiết bị này?\n\nNó sẽ quay trở lại trạng thái ĐANG SỬA CHỮA ở Danh sách Tài sản (để bạn có thể thao tác lại).');" class="text-green-500 hover:text-green-700 transition transform hover:scale-110" title="Khôi phục (Undo)"><i class="fas fa-undo-alt text-lg"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-5 py-10 text-center text-gray-500">
+                        <i class="fas fa-check-circle text-4xl mb-3 text-green-400"></i>
+                        <p>Tuyệt vời! Không có thiết bị nào bị hỏng hẳn trong hệ thống.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupLichSu" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[110] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-4xl m-auto rounded-xl shadow-2xl border-t-4 border-indigo-500">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-history text-indigo-500 mr-2"></i> Lịch sử: <span id="ls_ten_thiet_bi" class="text-indigo-600"></span></h3>
+            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Tổng cộng: <span id="ls_tong_so_lan">0</span> lần sửa</span>
+        </div>
+        <div class="overflow-x-auto max-h-[400px]">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead><tr class="bg-gray-50 text-gray-600 text-xs uppercase"><th class="px-4 py-3 border-b text-left">Ngày báo sửa</th><th class="px-4 py-3 border-b text-left">Nội dung lỗi</th><th class="px-4 py-3 border-b text-left">Ngày hoàn tất</th><th class="px-4 py-3 border-b text-left">Ghi chú sau sửa</th></tr></thead>
+                <tbody id="bodyLichSu" class="text-sm divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-between items-center mt-4">
+            <div id="phanTrangLichSu" class="flex space-x-2"></div>
+            <button onclick="document.getElementById('popupLichSu').classList.add('hidden')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateConfig = {
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true,
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] });
+            }
+        };
+        flatpickr("#tu_ngay", dateConfig);
+        flatpickr("#den_ngay", dateConfig);
+        new TomSelect("#tim_khoa_phong", { create: false});
+        new TomSelect("#tim_loai_thiet_bi", { create: false});
+    });
+
+    let currentTbId = null;
+
+    // Logic lấy dữ liệu lịch sử sửa chữa
+    function xemLichSu(id, ten, page = 1) {
+        currentTbId = id; 
+        document.getElementById('ls_ten_thiet_bi').innerText = ten;
+        document.getElementById('popupLichSu').classList.remove('hidden');
+        
+        fetch(`/api/lich-su-sua-chua/${id}/?page=${page}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('ls_tong_so_lan').innerText = data.tong_so_lan;
+            let html = data.lich_su.length === 0 ? '<tr><td colspan="4" class="py-4 text-center text-gray-500 italic">Chưa có lịch sử</td></tr>' : '';
+            data.lich_su.forEach(item => {
+                html += `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-red-600 font-medium">${item.ngay_sua}</td><td class="px-4 py-3 text-gray-600">${item.ghi_chu}</td><td class="px-4 py-3 text-green-600 font-medium">${item.ngay_ht}</td><td class="px-4 py-3 text-gray-600">${item.ghi_chu_ht}</td></tr>`;
+            });
+            document.getElementById('bodyLichSu').innerHTML = html;
+            renderPhanTrang(data, ten);
+        });
+    }
+
+    function renderPhanTrang(data, ten) {
+        let pt = document.getElementById('phanTrangLichSu'); pt.innerHTML = '';
+        if (data.total_pages > 1) {
+            if (data.has_previous) pt.innerHTML += `<button onclick="xemLichSu('${currentTbId}', '${ten}', ${data.current_page - 1})" class="px-3 py-1 bg-gray-100 rounded text-xs">Trước</button>`;
+            pt.innerHTML += `<span class="px-3 py-1 text-xs font-bold">Trang ${data.current_page}/${data.total_pages}</span>`;
+            if (data.has_next) pt.innerHTML += `<button onclick="xemLichSu('${currentTbId}', '${ten}', ${data.current_page + 1})" class="px-3 py-1 bg-gray-100 rounded text-xs">Tiếp</button>`;
+        }
+    }
+</script>
+{% endblock %}

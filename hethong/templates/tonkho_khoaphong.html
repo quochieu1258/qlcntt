@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+
+{% block title %}Tồn Kho Khoa Phòng{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-4 relative">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-warehouse text-amber-500 mr-2"></i> Quản Lý Tồn Kho Theo Khoa/Phòng</h2>
+        <p class="text-gray-500 text-sm mt-1">Xem số lượng vật tư hiện đang có tại các Khoa/Phòng</p>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex gap-4 items-end">
+        <div class="flex-1">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Chọn Khoa / Phòng cần xem tồn kho</label>
+            <select name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="">-- Vui lòng chọn Khoa / Phòng --</option>
+                {% for kp in khoa_phongs %}
+                    <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="w-56">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Trạng thái</label>
+            <select name="trang_thai" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="tat_ca" {% if trang_thai_value == 'tat_ca' %}selected{% endif %}>Tất cả trạng thái</option>
+                <option value="hoat_dong" {% if trang_thai_value == 'hoat_dong' %}selected{% endif %}>Đang hoạt động (Tốt)</option>
+                <option value="hu_hong" {% if trang_thai_value == 'hu_hong' %}selected{% endif %}>Hư hỏng</option>
+            </select>
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg shadow-sm text-sm transition">
+                <i class="fas fa-search mr-1"></i> Tra cứu
+            </button>
+        </div>
+    </form>
+
+    <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold border-b border-gray-200">
+                    <th class="px-5 py-4 text-left w-16">STT</th>
+                    <th class="px-5 py-4 text-left w-48">Mã Vật Tư</th>
+                    <th class="px-5 py-4 text-left">Tên Vật Tư</th>
+                    <th class="px-5 py-4 text-center w-32">Số Lượng</th>
+                    <th class="px-5 py-4 text-center w-[280px]">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% if not kp_value %}
+                    <tr><td colspan="5" class="px-5 py-10 text-center text-gray-400 italic">Vui lòng chọn Khoa / Phòng ở bên trên để xem dữ liệu.</td></tr>
+                {% else %}
+                    {% for ton in danh_sach_ton %}
+                        
+                        {% if ton.so_luong > 0 and trang_thai_value != 'hu_hong' %}
+                        <tr class="hover:bg-amber-50 transition duration-150 text-gray-700">
+                            <td class="px-5 py-4 whitespace-no-wrap text-center font-medium">{{ forloop.counter }}</td>
+                            <td class="px-5 py-4 whitespace-no-wrap font-mono text-gray-600">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>
+                            <td class="px-5 py-4 font-bold text-teal-700">{{ ton.vat_tu.ten_vat_tu }}</td>
+                            <td class="px-5 py-4 whitespace-no-wrap text-center">
+                                <span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-sm font-bold border border-green-200">{{ ton.so_luong }}</span>
+                            </td>
+                            <td class="px-5 py-4 whitespace-no-wrap text-center flex justify-center items-center space-x-2">
+                                <button onclick="moPopupBaoHong('{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }}', '{{ ton.so_luong }}', '{{ kp_value }}')" class="bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-2 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center border border-red-200" title="Báo hỏng vật tư">
+                                    <i class="fas fa-heart-broken mr-1"></i> Hỏng
+                                </button>
+                                <button onclick="moPopupTieuHao('{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }}', '{{ ton.so_luong }}', '{{ kp_value }}', 'tot')" class="bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white px-2 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center border border-purple-200" title="Xuất mang đi sử dụng">
+                                    <i class="fas fa-box-open mr-1"></i> Xuất Tiêu Hao
+                                </button>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {% if ton.so_luong_hong > 0 and trang_thai_value != 'hoat_dong' %}
+                        <tr class="bg-gray-100 text-gray-600 border-t-0 hover:bg-gray-200 transition">
+                            <td class="px-5 py-3 whitespace-no-wrap text-center"></td>
+                            <td class="px-5 py-3 whitespace-no-wrap font-mono">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>
+                            <td class="px-5 py-3 font-semibold">{{ ton.vat_tu.ten_vat_tu }} <span class="text-xs text-red-500 italic font-normal ml-1">(Hàng Hỏng)</span></td>
+                            <td class="px-5 py-3 whitespace-no-wrap text-center">
+                                <span class="bg-gray-300 text-gray-800 py-1 px-3 rounded-full text-sm font-bold">{{ ton.so_luong_hong }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-center text-xs flex justify-center items-center space-x-2">
+                                <button onclick="moPopupLichSuHong('{{ kp_value }}', '{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }}')" class="bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white px-2 py-1.5 rounded shadow-sm font-bold transition flex items-center border border-blue-200" title="Xem lịch sử hỏng từ đâu chuyển tới">
+                                    <i class="fas fa-eye mr-1"></i> Nguồn/Hoàn tác
+                                </button>
+                                <button onclick="moPopupTieuHao('{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }} (Hàng Hỏng)', '{{ ton.so_luong_hong }}', '{{ kp_value }}', 'hong')" class="bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white px-2 py-1.5 rounded shadow-sm font-bold transition flex items-center border border-purple-200" title="Mang đồ hỏng đi tiêu hủy/bỏ">
+                                    <i class="fas fa-trash-alt mr-1"></i> Xuất Tiêu Hao
+                                </button>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-10 text-center text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
+                            <p>Khoa/Phòng này hiện chưa có vật tư nào khớp với bộ lọc.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupBaoHong" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-md m-auto rounded-xl shadow-2xl border-t-4 border-red-500">
+        <button type="button" onclick="dongPopupBaoHong()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-heart-broken text-red-500 mr-2"></i> Báo Hỏng Vật Tư</h3>
+        
+        <input type="hidden" id="bh_vt_id">
+        <input type="hidden" id="bh_khoa_hien_tai">
+        <input type="hidden" id="bh_ton_toi_da">
+
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-1">Vật tư bị hỏng:</p>
+            <p id="bh_ten_vt" class="font-bold text-teal-700 text-lg"></p>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Số lượng hỏng (Tối đa: <span id="bh_ton_label" class="text-red-500"></span>)</label>
+            <input type="number" id="bh_so_luong" min="1" class="w-full border rounded px-3 py-2 text-sm focus:ring-red-500 focus:outline-none">
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Đồ hỏng này sẽ được lưu ở Khoa/Phòng nào?</label>
+            <select id="bh_khoa_nhan" class="w-full border rounded px-3 py-2 text-sm focus:ring-red-500 focus:outline-none bg-gray-50">
+                {% for kp in khoa_phongs %}
+                    <option value="{{ kp.id }}">{{ kp.ten_khoa_phong }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+            <button type="button" onclick="dongPopupBaoHong()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Hủy</button>
+            <button type="button" onclick="luuBaoHong()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded shadow-md transition">Xác nhận Hỏng</button>
+        </div>
+    </div>
+</div>
+
+<div id="popupTieuHao" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-md m-auto rounded-xl shadow-2xl border-t-4 border-purple-500">
+        <button type="button" onclick="dongPopupTieuHao()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-box-open text-purple-500 mr-2"></i> Xuất Tiêu Hao Vật Tư</h3>
+        
+        <input type="hidden" id="th_vt_id">
+        <input type="hidden" id="th_khoa_hien_tai">
+        <input type="hidden" id="th_ton_toi_da">
+        <input type="hidden" id="th_loai_xuat"> <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-1">Vật tư mang đi tiêu hao:</p>
+            <p id="th_ten_vt" class="font-bold text-teal-700 text-lg"></p>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Số lượng xuất (Tồn kho: <span id="th_ton_label" class="text-purple-600"></span>)</label>
+            <input type="number" id="th_so_luong" min="1" class="w-full border rounded px-3 py-2 text-sm focus:ring-purple-500 focus:outline-none">
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Khoa/Phòng nào sử dụng?</label>
+            <select id="th_khoa_nhan" class="w-full border rounded px-3 py-2 text-sm focus:ring-purple-500 focus:outline-none bg-gray-50">
+                {% for kp in khoa_phongs %}
+                    <option value="{{ kp.id }}">{{ kp.ten_khoa_phong }}</option>
+                {% endfor %}
+            </select>
+            <p class="text-[11px] text-purple-600 mt-1 italic">* Hàng sẽ bị trừ khỏi kho hiện tại và được ghi nhận vào báo cáo Lịch sử Tiêu hao.</p>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+            <button type="button" onclick="dongPopupTieuHao()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Hủy</button>
+            <button type="button" onclick="luuTieuHao()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded shadow-md transition">Xác nhận Xuất</button>
+        </div>
+    </div>
+</div>
+
+<div id="popupLichSuHong" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-2xl m-auto rounded-xl shadow-2xl border-t-4 border-blue-500">
+        <button type="button" onclick="dongPopupLichSuHong()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold text-gray-800 mb-2"><i class="fas fa-history text-blue-500 mr-2"></i> Lịch sử thu hồi hàng hỏng</h3>
+        <p class="text-sm text-teal-700 font-bold mb-4" id="lsh_ten_vt"></p>
+        
+        <div class="overflow-x-auto max-h-[300px] border rounded mb-4">
+            <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100 text-gray-600 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-2">Thời gian</th>
+                        <th class="px-4 py-2">Từ Khoa/Phòng</th>
+                        <th class="px-4 py-2 text-center">SL Hỏng</th>
+                        <th class="px-4 py-2 text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyLichSuHong" class="divide-y divide-gray-100">
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-end"><button type="button" onclick="dongPopupLichSuHong()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded">Đóng</button></div>
+    </div>
+</div>
+
+<script>
+    // --- KHU VỰC JAVASCRIPT ---
+
+    // 1. CHỨC NĂNG BÁO HỎNG
+    function moPopupBaoHong(vt_id, ten_vt, ton_kho, khoa_id) {
+        document.getElementById('popupBaoHong').classList.remove('hidden');
+        document.getElementById('bh_vt_id').value = vt_id;
+        document.getElementById('bh_khoa_hien_tai').value = khoa_id;
+        document.getElementById('bh_ten_vt').innerText = ten_vt;
+        document.getElementById('bh_ton_toi_da').value = ton_kho;
+        document.getElementById('bh_ton_label').innerText = ton_kho;
+        document.getElementById('bh_so_luong').value = '';
+        document.getElementById('bh_so_luong').max = ton_kho;
+        document.getElementById('bh_khoa_nhan').value = khoa_id;
+    }
+
+    function dongPopupBaoHong() { document.getElementById('popupBaoHong').classList.add('hidden'); }
+
+    function luuBaoHong() {
+        let vt_id = document.getElementById('bh_vt_id').value;
+        let khoa_hien_tai_id = document.getElementById('bh_khoa_hien_tai').value;
+        let khoa_nhan_hong_id = document.getElementById('bh_khoa_nhan').value;
+        let so_luong = parseInt(document.getElementById('bh_so_luong').value);
+        let max_ton = parseInt(document.getElementById('bh_ton_toi_da').value);
+        let csrfToken = document.getElementById('csrf_token').value;
+
+        if (!so_luong || so_luong <= 0) { alert('Vui lòng nhập số lượng hỏng!'); return; }
+        if (so_luong > max_ton) { alert('Số lượng báo hỏng không được lớn hơn số lượng tồn kho!'); return; }
+
+        let payload = { vt_id: vt_id, khoa_hien_tai_id: khoa_hien_tai_id, khoa_nhan_hong_id: khoa_nhan_hong_id, so_luong: so_luong };
+
+        fetch('/api/bao-hong-vat-tu/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if (data.status === 'success') { location.reload(); } else { alert("Lỗi: " + data.msg); }
+        });
+    }
+
+    // 2. CHỨC NĂNG XUẤT TIÊU HAO (CHO CẢ HÀNG TỐT VÀ HỎNG)
+    function moPopupTieuHao(vt_id, ten_vt, ton_kho, khoa_id, loai_xuat) {
+        document.getElementById('popupTieuHao').classList.remove('hidden');
+        document.getElementById('th_vt_id').value = vt_id;
+        document.getElementById('th_khoa_hien_tai').value = khoa_id;
+        document.getElementById('th_loai_xuat').value = loai_xuat; // Lưu trữ loại xuất (tot hay hong)
+        document.getElementById('th_ten_vt').innerText = ten_vt;
+        document.getElementById('th_ton_toi_da').value = ton_kho;
+        document.getElementById('th_ton_label').innerText = ton_kho;
+        document.getElementById('th_so_luong').value = '';
+        document.getElementById('th_so_luong').max = ton_kho;
+        document.getElementById('th_khoa_nhan').value = khoa_id;
+    }
+
+    function dongPopupTieuHao() { document.getElementById('popupTieuHao').classList.add('hidden'); }
+
+    function luuTieuHao() {
+        let vt_id = document.getElementById('th_vt_id').value;
+        let khoa_hien_tai_id = document.getElementById('th_khoa_hien_tai').value;
+        let khoa_nhan_id = document.getElementById('th_khoa_nhan').value;
+        let loai_xuat = document.getElementById('th_loai_xuat').value; 
+        let so_luong = parseInt(document.getElementById('th_so_luong').value);
+        let max_ton = parseInt(document.getElementById('th_ton_toi_da').value);
+        let csrfToken = document.getElementById('csrf_token').value;
+
+        if (!so_luong || so_luong <= 0) { alert('Vui lòng nhập số lượng tiêu hao!'); return; }
+        if (so_luong > max_ton) { alert('Số lượng không được lớn hơn tồn kho đang có!'); return; }
+
+        let payload = { 
+            vt_id: vt_id, 
+            khoa_hien_tai_id: khoa_hien_tai_id, 
+            khoa_nhan_id: khoa_nhan_id, 
+            so_luong: so_luong,
+            loai_xuat: loai_xuat 
+        };
+
+        fetch('/api/xuat-tieu-hao/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if (data.status === 'success') { location.reload(); } else { alert("Lỗi: " + data.msg); }
+        });
+    }
+
+    // 3. CHỨC NĂNG XEM VÀ HOÀN TÁC HỎNG
+    function moPopupLichSuHong(khoa_nhan_id, vt_id, ten_vt) {
+        document.getElementById('popupLichSuHong').classList.remove('hidden');
+        document.getElementById('lsh_ten_vt').innerText = ten_vt;
+        let tbody = document.getElementById('bodyLichSuHong');
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>';
+
+        fetch(`/api/chi-tiet-bao-hong/?khoa_nhan_id=${khoa_nhan_id}&vt_id=${vt_id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(item => {
+                        html += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-xs font-mono text-gray-500">${item.ngay}</td>
+                                <td class="px-4 py-3 font-bold text-gray-700">${item.khoa_xuat}</td>
+                                <td class="px-4 py-3 text-center font-bold text-red-500">${item.so_luong}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <button onclick="hoanTacBaoHong(${item.id})" class="text-white bg-orange-500 hover:bg-orange-600 px-3 py-1 rounded text-xs shadow transition">
+                                        <i class="fas fa-undo mr-1"></i> Hoàn tác
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-red-400">Không tìm thấy lịch sử!</td></tr>';
+                }
+            });
+    }
+
+    function dongPopupLichSuHong() { document.getElementById('popupLichSuHong').classList.add('hidden'); }
+
+    function hoanTacBaoHong(id) {
+        if (!confirm("Bạn có chắc chắn muốn Hoàn tác? Số lượng hỏng này sẽ được trả lại thành Đồ Tốt cho Khoa phòng gốc.")) return;
+        
+        let csrfToken = document.getElementById('csrf_token').value;
+        fetch(`/api/hoan-tac-bao-hong/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+        .then(res => res.json()).then(data => {
+            if (data.status === 'success') { alert(data.msg); location.reload(); } else { alert("Lỗi: " + data.msg); }
+        });
+    }
+</script>
+{% endblock %}

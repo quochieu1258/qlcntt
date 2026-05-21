@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Sửa Hồ Sơ Thanh Lý{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-md border-t-4 border-purple-500">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4"><i class="fas fa-edit text-purple-600 mr-2"></i> Sửa Thông Tin Thanh Lý</h2>
+    
+    <form method="POST" enctype="multipart/form-data" id="formSuaThanhLy">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Tên thiết bị</label>
+                <input type="text" value="{{ tb.ten_thiet_bi }}" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-bold text-gray-500">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Ngày thanh lý</label>
+                <input type="text" id="ngay_thanh_ly" name="ngay_thanh_ly" value="{{ tb.ngay_thanh_ly|date:'Y-m-d' }}" required class="w-full border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500 bg-white">
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-700 mb-1">Lý do</label>
+            <textarea name="ghi_chu" rows="3" required class="w-full border rounded px-3 py-2 focus:ring-purple-500 focus:border-purple-500">{{ tb.ly_do_thanh_ly }}</textarea>
+        </div>
+        
+        <div class="mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                <label class="block text-sm font-bold text-gray-800"><i class="fas fa-images text-purple-500 mr-1"></i> Quản lý hình ảnh minh chứng</label>
+                
+                <button type="button" onclick="document.getElementById('input_chon_anh').click()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold py-1.5 px-4 rounded text-sm transition flex items-center shadow-sm">
+                    <i class="fas fa-plus mr-1"></i> Thêm ảnh mới
+                </button>
+                <input type="file" id="input_chon_anh" name="hinh_anh" accept="image/*" multiple class="hidden">
+            </div>
+
+            <div class="flex flex-wrap gap-4" id="grid_hinh_anh">
+                
+                {% for anh in anh_cu %}
+                <div class="relative group w-28 h-28">
+                    <span class="absolute bottom-1 left-1 bg-gray-800 bg-opacity-70 text-white text-[10px] px-1.5 rounded z-10">Đã lưu</span>
+                    
+                    <a href="{{ anh.hinh_anh.url }}" target="_blank">
+                        <img src="{{ anh.hinh_anh.url }}" class="w-full h-full object-cover rounded-lg border-2 border-gray-300 shadow-sm group-hover:border-red-400 transition">
+                    </a>
+                    
+                    <label class="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md cursor-pointer border border-red-200 hover:bg-red-50 transition z-20" title="Tích để xóa ảnh cũ này">
+                        <input type="checkbox" name="xoa_anh" value="{{ anh.id }}" class="form-checkbox text-red-500 rounded cursor-pointer w-5 h-5 focus:ring-red-500">
+                    </label>
+                </div>
+                {% endfor %}
+
+                <div id="khu_vuc_anh_moi" class="contents"></div>
+
+            </div>
+            
+            {% if not anh_cu %}
+            <p id="txt_trong" class="text-sm text-gray-400 italic mt-2">Chưa có hình ảnh nào. Hãy bấm "Thêm ảnh mới".</p>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end space-x-3 border-t pt-5">
+            <a href="{% url 'bao_cao_thanh_ly' %}" class="bg-gray-200 hover:bg-gray-300 font-bold py-2 px-6 rounded-lg text-gray-800 transition shadow-sm">Hủy</a>
+            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-8 rounded-lg shadow-md transition flex items-center transform hover:scale-105">
+                <i class="fas fa-save mr-2"></i> Lưu Cập Nhật
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // 1. Cấu hình lịch
+    flatpickr("#ngay_thanh_ly", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+
+    // 2. LOGIC XỬ LÝ ẢNH MỚI TRÊN TRÌNH DUYỆT (Không chạm vào Backend)
+    let mangAnhMoi = []; // Mảng chứa các File object
+    const inputChonAnh = document.getElementById('input_chon_anh');
+    const khuVucAnhMoi = document.getElementById('khu_vuc_anh_moi');
+    const txtTrong = document.getElementById('txt_trong');
+
+    // Bắt sự kiện khi người dùng chọn thêm file
+    inputChonAnh.addEventListener('change', function(e) {
+        const files = e.target.files;
+        for (let i = 0; i < files.length; i++) {
+            mangAnhMoi.push(files[i]); // Nhét file vào mảng ảo
+        }
+        capNhatGiaoDienAnhMoi(); // Vẽ lại giao diện
+    });
+
+    // Hàm xóa ảnh mới khỏi mảng ảo
+    function xoaAnhMoi(index) {
+        mangAnhMoi.splice(index, 1); // Cắt file khỏi mảng
+        capNhatGiaoDienAnhMoi(); // Vẽ lại giao diện
+    }
+
+    // Hàm vẽ giao diện và ép dữ liệu vào form
+    function capNhatGiaoDienAnhMoi() {
+        khuVucAnhMoi.innerHTML = ''; // Xóa sạch vùng ảnh mới để vẽ lại
+        
+        // Sử dụng DataTransfer để gán lại danh sách file cho thẻ <input type="file">
+        const dataTransfer = new DataTransfer();
+
+        mangAnhMoi.forEach((file, index) => {
+            // 1. Thêm file vào DataTransfer
+            dataTransfer.items.add(file);
+
+            // 2. Tạo URL ảo để hiển thị ảnh
+            let objectUrl = URL.createObjectURL(file);
+
+            // 3. Tạo khối HTML hiển thị ảnh
+            let divHTML = `
+                <div class="relative group w-28 h-28 animate-pulse-once">
+                    <span class="absolute bottom-1 left-1 bg-green-500 text-white text-[10px] px-1.5 rounded font-bold z-10 shadow-sm">Mới thêm</span>
+                    
+                    <img src="${objectUrl}" class="w-full h-full object-cover rounded-lg border-2 border-green-300 shadow-sm">
+                    
+                    <button type="button" onclick="xoaAnhMoi(${index})" class="absolute -top-2 -right-2 bg-white text-red-500 hover:text-white hover:bg-red-500 rounded-full w-6 h-6 flex items-center justify-center shadow-md border border-red-200 transition z-20" title="Bỏ chọn ảnh này">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            khuVucAnhMoi.innerHTML += divHTML;
+        });
+
+        // 4. Gán DataTransfer ngược lại vào thẻ input thật để khi bấm Submit, nó gửi đúng số ảnh này lên Django
+        inputChonAnh.files = dataTransfer.files;
+
+        // Ẩn/hiện chữ "Chưa có hình ảnh"
+        if (txtTrong) {
+            if (mangAnhMoi.length > 0 || {{ anh_cu|length }} > 0) {
+                txtTrong.style.display = 'none';
+            } else {
+                txtTrong.style.display = 'block';
+            }
+        }
+    }
+</script>
+
+<style>
+    /* Hiệu ứng nháy nhẹ 1 lần khi thêm ảnh mới vào */
+    @keyframes pulse-once {
+        0% { transform: scale(0.9); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pulse-once { animation: pulse-once 0.3s ease-out forwards; }
+</style>
+{% endblock %}

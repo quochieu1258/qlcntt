@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Cập Nhật Phiếu Nhập Kho{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="bg-white p-8 rounded-xl shadow-md border-t-4 border-blue-500">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-edit text-blue-600 mr-2"></i> Cập Nhật Phiếu Nhập
+            </h2>
+            <a href="{% url 'danh_sach_phieu_nhap' %}" class="text-sm text-gray-500 hover:text-gray-800 font-medium">
+                <i class="fas fa-arrow-left mr-1"></i> Quay lại
+            </a>
+        </div>
+        
+        <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+
+        <div class="grid grid-cols-2 gap-6 mb-6 bg-blue-50 p-5 rounded-lg border border-blue-100">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Mã Phiếu</label>
+                <input type="text" value="{{ phieu.ma_phieu }}" readonly class="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-500 font-bold cursor-not-allowed">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Ngày nhập phiếu *</label>
+                <input type="text" id="nk_ngay_phieu" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 focus:ring-blue-500 focus:outline-none bg-white">
+            </div>
+        </div>
+
+        <div class="flex gap-4 items-end mb-4 border-b pb-4">
+            <div class="flex-1">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Chọn Vật Tư Cần Thêm</label>
+                <select id="nk_chon_vat_tu" class="w-full text-sm">
+                    <option value="">-- Tìm vật tư... --</option>
+                    {% for vt in danh_sach_tat_ca_vt %}
+                        <option value="{{ vt.id }}" data-ten="{{ vt.ten_vat_tu }}">{{ vt.ten_vat_tu }} (Tồn kho: {{ vt.so_luong }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-32">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Số lượng</label>
+                <input type="number" id="nk_so_luong" min="1" placeholder="Nhập..." class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:outline-none" onkeypress="xuLyEnter(event)">
+            </div>
+            <button type="button" onclick="themVaoLuoi()" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-5 rounded-lg transition h-[38px]">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-[400px] border rounded-lg mb-6 shadow-sm">
+            <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100 text-gray-700 sticky top-0">
+                    <tr>
+                        <th class="px-5 py-3">STT</th>
+                        <th class="px-5 py-3">Tên Vật Tư</th>
+                        <th class="px-5 py-3 text-center">Số Lượng</th>
+                        <th class="px-5 py-3 text-center">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyLuoiNhapKho" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-end space-x-4 border-t pt-6">
+            <a href="{% url 'danh_sach_phieu_nhap' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition">Hủy Thay Đổi</a>
+            <button type="button" onclick="capNhatPhieu()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-md transition flex items-center">
+                <i class="fas fa-save mr-2"></i> Lưu Cập Nhật
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu lưới được lấy trực tiếp từ Backend
+    let danhSachLuoi = JSON.parse('{{ chi_tiet_json|safe }}');
+    let tsVatTu = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        veLaiLuoi();
+
+        flatpickr("#nk_ngay_phieu", {
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true,
+            defaultDate: "{{ phieu.ngay_phieu|date:'Y-m-d' }}", // Nạp ngày cũ
+            onReady: function(d, s, i) {
+                new Cleave(i.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] });
+            }
+        });
+
+        tsVatTu = new TomSelect("#nk_chon_vat_tu", { create: false, placeholder: "-- Tìm vật tư... --" });
+    });
+
+    function xuLyEnter(e) { if (e.key === 'Enter') { e.preventDefault(); themVaoLuoi(); } }
+
+    function themVaoLuoi() {
+        let vt_id = tsVatTu.getValue();
+        let so_luong = document.getElementById('nk_so_luong').value;
+
+        if (!vt_id || !so_luong || so_luong <= 0) { alert("Vui lòng chọn vật tư và nhập số lượng!"); return; }
+
+        let ten_vt = tsVatTu.options[vt_id].text.split(' (Tồn')[0];
+        let tonTai = danhSachLuoi.find(item => item.vt_id === vt_id);
+        
+        if (tonTai) { tonTai.so_luong = parseInt(tonTai.so_luong) + parseInt(so_luong); } 
+        else { danhSachLuoi.push({ vt_id: vt_id, ten_vt: ten_vt, so_luong: parseInt(so_luong) }); }
+
+        document.getElementById('nk_so_luong').value = '';
+        tsVatTu.clear(); tsVatTu.focus();
+        veLaiLuoi();
+    }
+
+    function xoaKhoiLuoi(index) { danhSachLuoi.splice(index, 1); veLaiLuoi(); }
+
+    function veLaiLuoi() {
+        let tbody = document.getElementById('bodyLuoiNhapKho');
+        if (danhSachLuoi.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-5 py-10 text-center text-red-400 italic">Phiếu đang trống! Hãy thêm vật tư.</td></tr>';
+            return;
+        }
+        let html = '';
+        danhSachLuoi.forEach((item, index) => {
+            html += `<tr class="hover:bg-blue-50 transition border-b">
+                <td class="px-5 py-3">${index + 1}</td>
+                <td class="px-5 py-3 font-bold text-teal-700">${item.ten_vt}</td>
+                <td class="px-5 py-3 text-center font-bold text-lg text-blue-600">${item.so_luong}</td>
+                <td class="px-5 py-3 text-center"><button onclick="xoaKhoiLuoi(${index})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function capNhatPhieu() {
+        let ngay_phieu = document.getElementById('nk_ngay_phieu').value;
+        let csrfToken = document.getElementById('csrf_token').value;
+
+        if (!ngay_phieu) { alert('Thiếu ngày phiếu!'); return; }
+        if (danhSachLuoi.length === 0) { alert('Lưới vật tư đang trống!'); return; }
+
+        fetch('/api/cap-nhat-phieu-nhap/{{ phieu.id }}/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ ngay_phieu: ngay_phieu, items: danhSachLuoi })
+        }).then(res => res.json()).then(data => {
+            if (data.status === 'success') {
+                alert(data.msg);
+                window.location.href = "{% url 'danh_sach_phieu_nhap' %}";
+            } else { alert("Lỗi: " + data.msg); }
+        });
+    }
+</script>
+{% endblock %}

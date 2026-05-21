@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 landscape; /* In ngang để chứa nhiều cột */
+            margin: 1cm;
+        }
+        body {
+            font-family: sans-serif;
+            color: #333;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            text-align: left;
+            font-size: 13px;
+        }
+        th {
+            background-color: #ecf0f1;
+            font-weight: bold;
+        }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>Báo Cáo Lịch Sử Sửa Chữa Tài Sản CNTT</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Thiết Bị</th>
+                <th>Khoa Phòng</th>
+                <th>Ngày Báo Hỏng</th>
+                <th>Nội Dung Hỏng</th>
+                <th>Ngày Xong</th>
+                <th>Tình Trạng</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ls in lich_su %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td><b>{{ ls.thiet_bi.ten_thiet_bi }}</b><br><small>Mã: {{ ls.thiet_bi.ma_thiet_bi|default:"---" }}</small></td>
+                <td>{{ ls.thiet_bi.khoa_phong.ten_khoa_phong|default:"---" }}</td>
+                <td class="text-center">{{ ls.ngay_sua_chua|date:"d/m/Y" }}</td>
+                <td>{{ ls.ghi_chu }}</td>
+                <td class="text-center">{{ ls.ngay_hoan_tat|date:"d/m/Y"|default:"---" }}</td>
+                <td>{% if ls.ngay_hoan_tat %}Đã xong{% else %}Đang sửa{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

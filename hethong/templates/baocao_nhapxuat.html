@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo Tổng Hợp Nhập Xuất Tồn{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Báo Cáo Nhập Xuất Tồn</h2>
+            <p class="text-gray-500 text-sm mt-1">Tổng hợp số lượng nhập kho, xuất kho và tồn tại thời điểm đã chọn.</p>
+        </div>
+
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-blue-50 text-blue-800 px-6 py-2 rounded-full border border-blue-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Tổng số:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">loại vật tư</span>
+        </div>
+
+        <div class="flex space-x-2 z-10">
+            <a href="{% url 'xuat_pdf_nhap_xuat' %}?{{ request.GET.urlencode }}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-sm transition duration-200 flex items-center">
+                <i class="fas fa-file-pdf mr-2"></i> Xuất PDF
+            </a>
+            <a href="{% url 'xuat_excel_nhap_xuat' %}?{{ request.GET.urlencode }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-sm transition duration-200 flex items-center">
+                <i class="fas fa-file-excel mr-2"></i> Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày</label>
+                <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+                <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Tên / Mã Vật Tư</label>
+                <input type="text" name="q" value="{{ q_value }}" placeholder="Nhập tên..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg shadow-md text-sm transition">
+                    <i class="fas fa-search mr-1"></i> Tính Toán
+                </button>
+                <a href="{% url 'bao_cao_nhap_xuat' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm inline-flex items-center transition" title="Xóa bộ lọc">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative z-0">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700 uppercase text-xs font-semibold border-b">
+                        <th class="px-5 py-4 text-center border-r border-white">STT</th>
+                        <th class="px-5 py-4 text-left border-r border-white">Mã Vật Tư</th>
+                        <th class="px-5 py-4 text-left border-r border-white">Tên Vật Tư</th>
+                        <th class="px-5 py-4 text-center bg-gray-200 border-r border-white" title="Tồn kho trước thời gian chọn">Tồn Đầu</th>
+                        <th class="px-5 py-4 text-center bg-green-100 text-green-800 border-r border-white">Tổng Nhập</th>
+                        <th class="px-5 py-4 text-center bg-red-100 text-red-800 border-r border-white">Tổng Xuất</th>
+                        <th class="px-5 py-4 text-center bg-blue-100 text-blue-800" title="Tồn tại thời điểm kết thúc">Tồn Cuối Kỳ</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 divide-y divide-gray-100">
+                    {% for t in bao_cao %}
+                    <tr class="hover:bg-blue-50 transition duration-150">
+                        <td class="px-5 py-4 text-center">{{ forloop.counter }}</td>
+                        <td class="px-5 py-4 font-mono font-bold text-gray-500">{{ t.ma_vt }}</td>
+                        <td class="px-5 py-4 font-bold text-gray-800">{{ t.ten_vt }}</td>
+                        
+                        <td class="px-5 py-4 text-center font-bold text-gray-600 bg-gray-50/50">
+                            {{ t.ton_dau }}
+                        </td>
+
+                        <td class="px-5 py-4 text-center font-bold text-green-600 bg-green-50/50">
+                            {% if t.nhap_ky > 0 %}+{{ t.nhap_ky }}{% else %}-{% endif %}
+                        </td>
+                        
+                        <td class="px-5 py-4 text-center font-bold text-red-600 bg-red-50/50">
+                            {% if t.xuat_ky > 0 %}-{{ t.xuat_ky }}{% else %}-{% endif %}
+                        </td>
+                        
+                        <td class="px-5 py-4 text-center text-lg font-bold text-blue-600 bg-blue-50/50 shadow-inner">
+                            {{ t.ton_cuoi }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-10 text-center text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
+                            <p>Kho trống. Chưa có dữ liệu vật tư phù hợp với thời gian đã chọn.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateConfig = {
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true,
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] });
+            }
+        };
+        flatpickr("#tu_ngay", dateConfig);
+        flatpickr("#den_ngay", dateConfig);
+    });
+</script>
+{% endblock %}

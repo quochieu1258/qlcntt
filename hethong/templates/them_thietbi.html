@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Thêm Thiết Bị CNTT{% endblock %}
+
+{% block content %}
+<!-- Nhúng thư viện lịch Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Thêm Thiết Bị CNTT Mới</h2>
+        
+        {% if thong_bao %}
+            <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow-sm">
+                <p class="font-medium"><i class="fas fa-check-circle mr-2"></i> {{ thong_bao }}</p>
+            </div>
+        {% endif %}
+        
+        {% if thong_bao_loi %}
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm">
+                <p class="font-medium"><i class="fas fa-exclamation-triangle mr-2"></i> {{ thong_bao_loi }}</p>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Mã thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mã thiết bị <span class="text-gray-400 font-normal italic">(Có thể bỏ trống)</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           type="text" name="ma_thiet_bi" placeholder="Ví dụ: PC-01">
+                </div>
+                
+                <!-- Tên thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Tên thiết bị <span class="text-red-500">*</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           type="text" name="ten_thiet_bi" required placeholder="Ví dụ: Máy tính bàn Kế Toán">
+                </div>
+
+                <!-- Ngày sử dụng (Đã đổi type="text" để dùng thư viện lịch) -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Ngày sử dụng <span class="text-gray-400 font-normal italic">(Có thể bỏ trống)</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+                           type="text" id="ngay_su_dung" name="ngay_su_dung" placeholder="dd/mm/yyyy">
+                </div>
+
+                <!-- Loại thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Loại thiết bị <span class="text-red-500">*</span></label>
+                    <select class="shadow-sm border border-gray-300 rounded w-full py-2 px-3 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            name="loai_thiet_bi" required>
+                        <option value="">-- Chọn loại thiết bị --</option>
+                        <option value="Máy Tính">Máy Tính</option>
+                        <option value="Máy In">Máy In</option>
+                        <option value="Máy Scan">Máy Scan</option>
+                        <option value="Máy Photo">Máy Photo</option>
+                        <option value="Thiết Bị Mạng">Thiết Bị Mạng</option>
+                        <option value="Quét Mã Vạch">Quét Mã Vạch</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Khoa Phòng -->
+            <div class="mb-8">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Khoa Phòng phân bổ <span class="text-gray-400 font-normal italic">(Có thể bỏ trống)</span></label>
+                <select class="shadow-sm border border-gray-300 rounded w-full py-2 px-3 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        name="khoa_phong">
+                    <option value="">-- Khoa/Phòng chưa xác định --</option>
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}">{{ kp.ten_khoa_phong }} {% if kp.ma_khoa_phong %}({{ kp.ma_khoa_phong }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition duration-200" type="submit">
+                <i class="fas fa-save mr-2"></i> Lưu Thiết Bị
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Kích hoạt lịch Flatpickr -->
+<!-- Nhúng thư viện lịch Flatpickr (Đã có sẵn từ bước trước) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<!-- THÊM MỚI: Nhúng thư viện Cleave.js để tự động định dạng dấu / -->
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<!-- Cấu hình script -->
+<script>
+    flatpickr("#ngay_su_dung", {
+        dateFormat: "Y-m-d", // Định dạng gửi về database (bắt buộc)
+        altInput: true,      // Kích hoạt ô nhập ảo để hiển thị cho người dùng
+        altFormat: "d/m/Y",  // Định dạng hiển thị ra ngoài màn hình
+        locale: "vn",        // Dùng tiếng Việt
+        allowInput: true,    // Cho phép người dùng gõ tay thay vì chỉ chọn lịch
+        
+        // KHI LỊCH ĐÃ SẴN SÀNG, GẮN CLEAVE.JS VÀO Ô NHẬP
+        onReady: function(selectedDates, dateStr, instance) {
+            // instance.altInput chính là cái ô text mà người dùng đang nhìn thấy
+            new Cleave(instance.altInput, {
+                date: true,
+                delimiter: '/',
+                datePattern: ['d', 'm', 'Y'] // Bắt buộc gõ theo thứ tự Ngày / Tháng / Năm
+            });
+        }
+    });
+</script>
+
+{% endblock %}

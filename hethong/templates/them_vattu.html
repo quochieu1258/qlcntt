@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Thêm Vật Tư CNTT{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-box-open text-blue-600 mr-2"></i> Thêm Vật Tư CNTT Mới
+            </h2>
+            <a href="{% url 'danh_sach_vat_tu' %}" class="text-sm text-blue-600 hover:text-blue-800 font-medium transition">
+                <i class="fas fa-list mr-1"></i> Danh sách vật tư
+            </a>
+        </div>
+        
+        {% if thong_bao %}
+            <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow-sm">
+                <p class="font-medium"><i class="fas fa-check-circle mr-2"></i> {{ thong_bao }}</p>
+            </div>
+        {% endif %}
+        
+        {% if thong_bao_loi %}
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm">
+                <p class="font-medium"><i class="fas fa-exclamation-triangle mr-2"></i> {{ thong_bao_loi }}</p>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mã vật tư <span class="text-gray-400 font-normal italic">(Bỏ trống hệ thống tự sinh mã)</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                           type="text" name="ma_vat_tu" placeholder="Ví dụ: MUC-IN-01">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Tên vật tư <span class="text-red-500">*</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                           type="text" name="ten_vat_tu" required placeholder="Ví dụ: Mực in Canon 2900">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Nơi để vật tư <span class="text-gray-400 font-normal italic">(Có thể bỏ trống)</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" 
+                           type="text" name="noi_de_vat_tu" placeholder="VD: Tủ A1, Kho tầng 2...">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Hạn sử dụng <span class="text-gray-400 font-normal italic">(Có thể bỏ trống)</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition" 
+                           type="text" id="han_su_dung" name="han_su_dung" placeholder="dd/mm/yyyy">
+                </div>
+
+                <div class="md:col-span-2 mt-2 bg-orange-50 p-4 rounded-lg border border-orange-100">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_tieu_hao" class="form-checkbox h-5 w-5 text-orange-600 rounded focus:ring-orange-500 border-gray-300 transition duration-150 ease-in-out">
+                        <span class="ml-2 text-sm font-bold text-gray-700">Đây là vật tư tiêu hao <span class="text-orange-600 font-normal italic">(Sử dụng 1 lần, không thu hồi)</span></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4 border-t pt-6">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow-sm transition duration-200" type="submit">
+                    <i class="fas fa-save mr-2"></i> Lưu Vật Tư
+                </button>
+                <button type="reset" class="text-gray-500 hover:text-gray-800 font-medium transition">
+                    Làm mới form
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        flatpickr("#han_su_dung", {
+            dateFormat: "Y-m-d", 
+            altInput: true,      
+            altFormat: "d/m/Y",  
+            locale: "vn",        
+            allowInput: true,    
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, {
+                    date: true,
+                    delimiter: '/',
+                    datePattern: ['d', 'm', 'Y'] 
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

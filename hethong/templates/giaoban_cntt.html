@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Sổ Giao Ban CNTT{% endblock %}
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative max-w-full px-4">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Sổ Giao Ban CNTT</h2>
+            <p class="text-gray-500 text-sm mt-1">Ghi nhận thông tin tiếp nhận và xử lý sự cố hàng ngày.</p>
+        </div>
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-blue-50 text-blue-800 px-6 py-2 rounded-full border border-blue-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Đã ghi nhận:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> <span class="text-sm font-medium text-gray-600 ml-2">phiếu</span>
+        </div>
+        <div>
+            <button onclick="document.getElementById('popupGiaoBan').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow-sm transition duration-200 flex items-center transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i> Thêm Giao Ban Mới
+            </button>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày</label>
+                <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+                <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Khoa Phòng</label>
+                <select id="loc_khoa_phong" name="khoa_phong" class="w-full text-sm">
+                    <option value="">-- Tất cả khoa --</option>
+                    {% for kp in khoa_phongs %}<option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Nhân viên tiếp nhận</label>
+                <select id="loc_nhan_vien" name="nhan_vien" class="w-full text-sm">
+                    <option value="">-- Tất cả nhân viên --</option>
+                    {% for nv in nhan_viens %}<option value="{{ nv.id }}" {% if nv_value == nv.id|stringformat:"s" %}selected{% endif %}>{{ nv.ten_nhan_vien }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Trạng Thái</label>
+                <select name="trang_thai" class="w-full border rounded-lg px-3 py-2 text-sm bg-white shadow-sm">
+                    <option value="">-- Tất cả --</option>
+                    <option value="Đã hoàn thành" {% if trang_thai_value == 'Đã hoàn thành' %}selected{% endif %}>Hoàn thành</option>
+                    <option value="Đang xử lý" {% if trang_thai_value == 'Đang xử lý' %}selected{% endif %}>Đang xử lý</option>
+                    <option value="Chưa xử lý" {% if trang_thai_value == 'Chưa xử lý' %}selected{% endif %}>Chưa xử lý</option>
+                    <option value="Cần theo dõi thêm" {% if trang_thai_value == 'Cần theo dõi thêm' %}selected{% endif %}>Cần theo dõi</option>
+                    <option value="Khác" {% if trang_thai_value == 'Khác' %}selected{% endif %}>Khác</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2 border-t pt-4">
+            <a href="{% url 'giao_ban_cntt' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-6 rounded-lg text-sm transition">Làm mới</a>
+            <button type="submit" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-8 rounded-lg text-sm transition shadow-md"><i class="fas fa-search mr-1"></i> Lọc Giao Ban</button>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead class="bg-gray-200 text-gray-700 uppercase text-xs font-bold border-b border-gray-300">
+                <tr>
+                    <th class="px-4 py-4 text-center whitespace-nowrap w-[8%]">Ngày</th>
+                    <th class="px-4 py-4 text-left w-[12%]">Đơn Vị - Người Nhận</th>
+                    <th class="px-4 py-4 text-left w-[25%]">Tình Trạng Tiếp Nhận</th>
+                    <th class="px-4 py-4 text-left w-[25%]">Cách Xử Lý</th>
+                    <th class="px-4 py-4 text-left w-[15%]">Ghi Chú</th>
+                    <th class="px-4 py-4 text-center whitespace-nowrap w-[10%]">Trạng Thái</th>
+                    <th class="px-4 py-4 text-center whitespace-nowrap w-[5%]">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 divide-y divide-gray-100">
+                {% for item in danh_sach %}
+                <tr class="hover:bg-blue-50 transition border-b border-gray-50">
+                    <td class="px-4 py-5 text-center font-bold text-gray-800 whitespace-nowrap align-top border-l-4 border-blue-400">
+                        {{ item.ngay_giao_ban|date:"d/m/Y" }}
+                    </td>
+                    
+                    <td class="px-4 py-5 align-top">
+                        <span class="font-bold text-blue-700 block text-[13px] uppercase mb-1">{{ item.khoa_phong.ten_khoa_phong }}</span>
+                        <span class="text-xs text-gray-600 font-medium inline-flex items-center bg-gray-100 px-2 py-1 rounded-md border border-gray-200"><i class="fas fa-user-circle text-gray-400 mr-1.5"></i> {{ item.nhan_vien.ten_nhan_vien }}</span>
+                    </td>
+                    
+                    <td class="px-4 py-5 align-top">
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 whitespace-pre-line text-justify break-words leading-relaxed shadow-sm h-full">
+                            {{ item.tinh_trang_tiep_nhan }}
+                        </div>
+                    </td>
+                    
+                    <td class="px-4 py-5 align-top">
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 whitespace-pre-line text-justify break-words leading-relaxed shadow-sm h-full">
+                            {{ item.cach_xu_ly }}
+                        </div>
+                    </td>
+
+                    <td class="px-4 py-5 align-top">
+                        <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 whitespace-pre-line text-justify break-words leading-relaxed shadow-sm h-full">
+                            {% if item.ghi_chu %}
+                                {{ item.ghi_chu }}
+                            {% else %}
+                                <span class="italic text-gray-400">Không có ghi chú</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    
+                    <td class="px-4 py-5 text-center align-top">
+                        {% if item.trang_thai == 'Đã hoàn thành' %}<span class="bg-green-100 text-green-700 py-1.5 px-3 rounded-md text-xs font-bold uppercase shadow-sm whitespace-nowrap block"><i class="fas fa-check mr-1"></i>Hoàn thành</span>
+                        {% elif item.trang_thai == 'Đang xử lý' %}<span class="bg-blue-100 text-blue-700 py-1.5 px-3 rounded-md text-xs font-bold uppercase shadow-sm whitespace-nowrap block animate-pulse"><i class="fas fa-spinner fa-spin mr-1"></i>Đang xử lý</span>
+                        {% elif item.trang_thai == 'Chưa xử lý' %}<span class="bg-red-100 text-red-700 py-1.5 px-3 rounded-md text-xs font-bold uppercase shadow-sm whitespace-nowrap block"><i class="fas fa-exclamation-triangle mr-1"></i>Chưa xử lý</span>
+                        {% elif item.trang_thai == 'Cần theo dõi thêm' %}<span class="bg-orange-100 text-orange-700 py-1.5 px-3 rounded-md text-xs font-bold uppercase shadow-sm whitespace-nowrap block"><i class="fas fa-eye mr-1"></i>Theo dõi</span>
+                        {% else %}<span class="bg-gray-200 text-gray-700 py-1.5 px-3 rounded-md text-xs font-bold uppercase shadow-sm whitespace-nowrap block">{{ item.trang_thai }}</span>{% endif %}
+                    </td>
+                    
+                    <td class="px-4 py-5 text-center whitespace-nowrap align-top">
+                        <a href="{% url 'sua_giao_ban' item.id %}" class="text-blue-500 hover:text-blue-700 transition mx-1 transform hover:scale-110 inline-block" title="Sửa"><i class="fas fa-edit text-lg"></i></a>
+                        <a href="{% url 'xoa_giao_ban' item.id %}" onclick="return confirm('Bạn có chắc muốn xóa bản ghi giao ban này không?');" class="text-red-500 hover:text-red-700 transition mx-1 transform hover:scale-110 inline-block" title="Xóa"><i class="fas fa-trash-alt text-lg"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="px-5 py-16 text-center text-gray-500"><i class="fas fa-clipboard text-5xl mb-4 text-gray-300"></i><p class="text-lg">Sổ giao ban trống. Chưa có ghi nhận nào trong hệ thống.</p></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupGiaoBan" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-start justify-center pt-10 pb-10 transition-opacity duration-300">
+    <div class="relative p-8 bg-white w-full max-w-3xl m-auto rounded-xl shadow-2xl border-t-4 border-blue-600">
+        <button type="button" onclick="document.getElementById('popupGiaoBan').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-2xl"></i></button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4"><i class="fas fa-pencil-alt text-blue-500 mr-2"></i> Ghi Nhận Giao Ban Mới</h3>
+        
+        <form method="POST" action="{% url 'luu_giao_ban' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-5 mb-5 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Ngày giao ban <span class="text-red-500">*</span></label>
+                    <input type="text" id="form_ngay" name="ngay_giao_ban" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 bg-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Trạng thái <span class="text-red-500">*</span></label>
+                    <select name="trang_thai" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white shadow-sm font-bold text-gray-700">
+                        <option value="Đã hoàn thành">✅ Đã hoàn thành</option>
+                        <option value="Đang xử lý">🔄 Đang xử lý</option>
+                        <option value="Chưa xử lý">⚠️ Chưa xử lý</option>
+                        <option value="Cần theo dõi thêm">👀 Cần theo dõi thêm</option>
+                        <option value="Khác">📌 Khác</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5 mb-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Khoa Phòng <span class="text-red-500">*</span></label>
+                    <select id="form_kp" name="khoa_phong" required class="w-full text-sm"><option value="">-- Chọn khoa phòng --</option>{% for kp in khoa_phongs %}<option value="{{ kp.id }}">{{ kp.ten_khoa_phong }}</option>{% endfor %}</select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nhân viên thực hiện <span class="text-red-500">*</span></label>
+                    <select id="form_nv" name="nhan_vien" required class="w-full text-sm"><option value="">-- Chọn nhân viên --</option>{% for nv in nhan_viens %}<option value="{{ nv.id }}">{{ nv.ten_nhan_vien }}</option>{% endfor %}</select>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Tình trạng tiếp nhận <span class="text-red-500">*</span></label>
+                <textarea name="tinh_trang_tiep_nhan" rows="4" required placeholder="Mô tả chi tiết tình trạng lúc tiếp nhận..." class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-inner"></textarea>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Cách xử lý <span class="text-red-500">*</span></label>
+                <textarea name="cach_xu_ly" rows="4" required placeholder="Các bước đã thực hiện để khắc phục..." class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-inner"></textarea>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Ghi chú thêm</label>
+                <textarea name="ghi_chu" rows="3" placeholder="Lưu ý phụ, thiết bị thay thế, người phối hợp..." class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 bg-gray-50 shadow-inner"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3 border-t pt-5">
+                <button type="button" onclick="document.getElementById('popupGiaoBan').classList.add('hidden')" class="bg-gray-200 hover:bg-gray-300 font-bold py-2 px-6 rounded-lg text-gray-800 transition">Hủy</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-md transition flex items-center text-lg"><i class="fas fa-save mr-2"></i> Lưu Sổ Giao Ban</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const d = { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true, onReady: function(s, ds, i) { new Cleave(i.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] }); }};
+        
+        flatpickr("#tu_ngay", d); flatpickr("#den_ngay", d);
+        flatpickr("#form_ngay", { ...d, defaultDate: "today" });
+
+        new TomSelect("#loc_khoa_phong", { create: false });
+        new TomSelect("#loc_nhan_vien", { create: false });
+        new TomSelect("#form_kp", { create: false });
+        new TomSelect("#form_nv", { create: false });
+    });
+</script>
+{% endblock %}

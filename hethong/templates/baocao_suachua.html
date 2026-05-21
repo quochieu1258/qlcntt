@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo Sửa Chữa Thiết Bị{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Báo Cáo Sửa Chữa Thiết Bị</h2>
+            <p class="text-gray-500 text-sm mt-1">Thống kê lịch sử hỏng hóc và bảo trì tài sản CNTT</p>
+        </div>
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-blue-50 text-blue-800 px-6 py-2 rounded-full border border-blue-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Tìm thấy:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">phiếu sửa chữa</span>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'xuat_pdf_sua_chua' %}?{{ request.GET.urlencode }}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-sm transition duration-200 flex items-center">
+                <i class="fas fa-file-pdf mr-2"></i> Xuất PDF
+            </a>
+            
+            <a href="{% url 'xuat_excel_sua_chua' %}?{{ request.GET.urlencode }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-sm transition duration-200 flex items-center">
+                <i class="fas fa-file-excel mr-2"></i> Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày báo sửa</label>
+                <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+                <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Tên Máy</label>
+                <input type="text" name="q" value="{{ q_value }}" placeholder="Nhập tên TB..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Khoa Phòng</label>
+                <select id="tim_khoa_phong" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">-- Tất cả khoa --</option>
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Loại thiết bị</label>
+                <select id="tim_loai_thiet_bi" name="loai_thiet_bi" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">-- Tất cả --</option>
+                    {% for loai in loai_choices %}
+                        <option value="{{ loai.0 }}" {% if loai_value == loai.0 %}selected{% endif %}>{{ loai.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg shadow-md text-sm transition">
+                    <i class="fas fa-search mr-1"></i> Báo Cáo
+                </button>
+                <a href="{% url 'bao_cao_sua_chua' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm inline-flex items-center transition" title="Xóa bộ lọc">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative z-0">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700 uppercase text-xs font-semibold border-b">
+                        <th class="px-5 py-4 text-left">STT</th>
+                        <th class="px-5 py-4 text-left">Thiết Bị</th>
+                        <th class="px-5 py-4 text-left">Khoa Phòng</th>
+                        <th class="px-5 py-4 text-left">Ngày Báo Hỏng</th>
+                        <th class="px-5 py-4 text-left">Nội Dung Hỏng</th>
+                        <th class="px-5 py-4 text-left">Ngày Hoàn Tất</th>
+                        <th class="px-5 py-4 text-left">Tình Trạng</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 divide-y divide-gray-100">
+                    {% for ls in lich_su %}
+                    <tr class="hover:bg-gray-50 transition duration-150">
+                        <td class="px-5 py-4 whitespace-no-wrap text-center">{{ forloop.counter }}</td>
+                        
+                        <td class="px-5 py-4">
+                            <div class="font-bold text-blue-600">{{ ls.thiet_bi.ten_thiet_bi }}</div>
+                            <div class="text-xs text-gray-500 mt-1">Mã: {{ ls.thiet_bi.ma_thiet_bi|default:"---" }} - Loại: {{ ls.thiet_bi.loai_thiet_bi }}</div>
+                        </td>
+                        
+                        <td class="px-5 py-4 font-medium">{{ ls.thiet_bi.khoa_phong.ten_khoa_phong|default:"Chưa rõ" }}</td>
+                        
+                        <td class="px-5 py-4 font-bold text-red-600">{{ ls.ngay_sua_chua|date:"d/m/Y" }}</td>
+                        <td class="px-5 py-4 text-gray-600 max-w-xs truncate" title="{{ ls.ghi_chu }}">{{ ls.ghi_chu }}</td>
+                        
+                        <td class="px-5 py-4 font-bold text-green-600">
+                            {{ ls.ngay_hoan_tat|date:"d/m/Y"|default:"---" }}
+                        </td>
+                        
+                        <td class="px-5 py-4">
+                            {% if ls.ngay_hoan_tat %}
+                                <span class="bg-green-100 text-green-800 py-1 px-2 rounded text-xs font-bold"><i class="fas fa-check mr-1"></i> Đã Xong</span>
+                            {% else %}
+                                <span class="bg-orange-100 text-orange-800 py-1 px-2 rounded text-xs font-bold animate-pulse"><i class="fas fa-wrench mr-1"></i> Đang sửa</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-10 text-center text-gray-500">
+                            <i class="fas fa-clipboard-list text-4xl mb-3 text-gray-300"></i>
+                            <p>Không có dữ liệu báo cáo nào phù hợp với bộ lọc.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateConfig = {
+            dateFormat: "Y-m-d", 
+            altInput: true,      
+            altFormat: "d/m/Y",  
+            locale: "vn",        
+            allowInput: true,
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, {
+                    date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] 
+                });
+            }
+        };
+
+        // Kích hoạt lịch cho 2 ô lọc ngày tháng
+        flatpickr("#tu_ngay", dateConfig);
+        flatpickr("#den_ngay", dateConfig);
+
+        new TomSelect("#tim_khoa_phong", { create: false, placeholder: "-- Tất cả khoa phòng --" });
+        new TomSelect("#tim_loai_thiet_bi", { create: false, placeholder: "-- Tất cả loại thiết bị --" });
+    });
+</script>
+{% endblock %}

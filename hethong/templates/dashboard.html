@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Bảng điều khiển - Hệ thống QLCNTT{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Bảng điều khiển hệ thống</h1>
+        <p class="text-gray-600 text-sm mt-1">Chào mừng bạn đã trở lại, hệ thống đang hoạt động ổn định.</p>
+    </div>
+    <a href="{% url 'them_thiet_bi' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
+        <i class="fas fa-plus mr-2"></i> Thêm Thiết Bị
+    </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md transition cursor-pointer">
+        <div class="bg-blue-100 p-3 rounded-lg text-blue-600">
+            <i class="fas fa-desktop text-2xl"></i>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 font-medium">Tổng thiết bị</p>
+            <p class="text-2xl font-bold text-gray-800">{{ tong_thiet_bi|default:"0" }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-red-100 flex items-center space-x-4 hover:shadow-md transition cursor-pointer">
+        <div class="bg-red-100 p-3 rounded-lg text-red-600">
+            <i class="fas fa-tools text-2xl"></i>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 font-medium">Đang bảo trì</p>
+            <p class="text-2xl font-bold text-red-600">{{ dang_bao_tri|default:"0" }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md transition">
+        <div class="bg-yellow-100 p-3 rounded-lg text-yellow-600">
+            <i class="fas fa-ticket-alt text-2xl"></i>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 font-medium">Yêu cầu mới</p>
+            <p class="text-2xl font-bold text-gray-800">0</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md transition">
+        <div class="bg-purple-100 p-3 rounded-lg text-purple-600">
+            <i class="fas fa-user-shield text-2xl"></i>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 font-medium">Nhân sự IT</p>
+            <p class="text-2xl font-bold text-gray-800">0</p>
+        </div>
+    </div>
+</div>
+
+<div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="text-lg font-bold text-gray-800">
+            <i class="fas fa-clipboard-list text-blue-600 mr-2"></i> Báo Cáo Sửa Chữa Gần Đây
+        </h3>
+        <a href="{% url 'bao_cao_sua_chua' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition">
+            Xem toàn bộ báo cáo &rarr;
+        </a>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full leading-normal text-sm">
+            <thead>
+                <tr class="text-gray-500 uppercase text-xs font-semibold bg-white border-b border-gray-100">
+                    <th class="px-6 py-4 text-left">Thiết Bị</th>
+                    <th class="px-6 py-4 text-left">Khoa Phòng</th>
+                    <th class="px-6 py-4 text-left">Ngày Báo Hỏng</th>
+                    <th class="px-6 py-4 text-left">Nội Dung</th>
+                    <th class="px-6 py-4 text-center">Tình Trạng</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 divide-y divide-gray-50">
+                {% for ls in lich_su_moi %}
+                <tr class="hover:bg-blue-50 transition duration-150">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-blue-600">{{ ls.thiet_bi.ten_thiet_bi }}</div>
+                        <div class="text-xs text-gray-400 mt-1">{{ ls.thiet_bi.loai_thiet_bi }}</div>
+                    </td>
+                    <td class="px-6 py-4 font-medium">{{ ls.thiet_bi.khoa_phong.ten_khoa_phong|default:"---" }}</td>
+                    <td class="px-6 py-4 font-bold text-red-500">{{ ls.ngay_sua_chua|date:"d/m/Y" }}</td>
+                    <td class="px-6 py-4 text-gray-600 max-w-xs truncate" title="{{ ls.ghi_chu }}">{{ ls.ghi_chu }}</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if ls.ngay_hoan_tat %}
+                            <span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-xs font-bold inline-flex items-center">
+                                <i class="fas fa-check mr-1"></i> Đã Xong
+                            </span>
+                        {% else %}
+                            <span class="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-bold animate-pulse inline-flex items-center">
+                                <i class="fas fa-tools mr-1"></i> Đang sửa
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                        <i class="fas fa-check-circle text-4xl mb-3 text-green-400"></i>
+                        <p>Tuyệt vời! Hiện không có thiết bị nào đang hỏng hóc hoặc cần sửa chữa.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

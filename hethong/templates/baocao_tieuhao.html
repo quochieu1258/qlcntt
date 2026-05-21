@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo Vật Tư Tiêu Hao{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-burn text-pink-500 mr-2"></i> Báo Cáo Tổng Hợp Vật Tư Tiêu Hao</h2>
+        <p class="text-gray-500 text-sm mt-1">Lịch sử xuất các vật tư đã được đem đi sử dụng (hoặc tiêu hủy) được cộng dồn theo từng loại</p>
+    </div>
+
+    <form method="GET" action="" id="formLoc" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-end">
+        <div>
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày</label>
+            <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 bg-white w-36">
+        </div>
+        <div>
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+            <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 bg-white w-36">
+        </div>
+        
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Khoa phòng sử dụng</label>
+            <select id="khoa_phong" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500">
+                <option value="">-- Tất cả Khoa / Phòng --</option>
+                {% for kp in khoa_phongs %}
+                    <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="flex gap-2">
+            <button type="submit" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-sm text-sm transition">
+                <i class="fas fa-search mr-1"></i> Tra cứu
+            </button>
+            <a href="{% url 'bao_cao_tieu_hao' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm transition" title="Làm mới">
+                <i class="fas fa-undo"></i>
+            </a>
+        </div>
+    </form>
+
+    <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold border-b border-gray-200">
+                    <th class="px-5 py-4 text-left w-16">STT</th>
+                    <th class="px-5 py-4 text-left w-48">Mã Vật Tư</th>
+                    <th class="px-5 py-4 text-left">Tên Vật Tư</th>
+                    <th class="px-5 py-4 text-center w-40">Tổng Đã Tiêu Hao</th>
+                    <th class="px-5 py-4 text-center w-32">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-700">
+                {% for ls in ds_tieu_hao %}
+                <tr class="hover:bg-pink-50 transition duration-150">
+                    <td class="px-5 py-4 text-center font-medium">{{ forloop.counter }}</td>
+                    <td class="px-5 py-4 font-mono text-xs text-gray-500">{{ ls.vat_tu__ma_vat_tu|default:"---" }}</td>
+                    <td class="px-5 py-4 font-bold text-teal-700">{{ ls.vat_tu__ten_vat_tu }}</td>
+                    <td class="px-5 py-4 text-center">
+                        <span class="bg-pink-100 text-pink-700 py-1 px-4 rounded-full font-bold border border-pink-200 text-base">{{ ls.tong_sl }}</span>
+                    </td>
+                    <td class="px-5 py-4 text-center flex justify-center space-x-2">
+                        <button onclick="xemChiTietTieuHao('{{ ls.vat_tu__id }}', '{{ ls.vat_tu__ten_vat_tu|escapejs }}')" class="bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white px-4 py-2 rounded shadow-sm text-sm font-bold transition flex items-center border border-blue-200" title="Xem chi tiết các lần xuất">
+                            <i class="fas fa-eye mr-2"></i> Xem chi tiết
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-5 py-10 text-center text-gray-500">
+                        <i class="fas fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                        <p>Không tìm thấy dữ liệu xuất tiêu hao nào.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupChiTiet" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-4xl m-auto rounded-xl shadow-2xl border-t-4 border-blue-500">
+        <button type="button" onclick="dongPopupChiTiet()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold text-gray-800 mb-2"><i class="fas fa-list-ul text-blue-500 mr-2"></i> Chi tiết lịch sử tiêu hao</h3>
+        <p class="text-base text-teal-700 font-bold mb-4">Vật tư: <span id="ct_ten_vt" class="text-pink-600"></span></p>
+        
+        <div class="overflow-x-auto max-h-[400px] border rounded mb-4">
+            <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100 text-gray-600 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3">Thời gian</th>
+                        <th class="px-4 py-3">Từ Khoa (Nguồn)</th>
+                        <th class="px-4 py-3">Đến Khoa (Sử dụng)</th>
+                        <th class="px-4 py-3 text-center">Trạng thái</th>
+                        <th class="px-4 py-3 text-center">SL</th>
+                        <th class="px-4 py-3 text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyChiTiet" class="divide-y divide-gray-100">
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-end">
+            <button onclick="dongPopupChiTiet()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded transition">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        flatpickr("#tu_ngay", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+        flatpickr("#den_ngay", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+    });
+
+    function xemChiTietTieuHao(vt_id, ten_vt) {
+        document.getElementById('popupChiTiet').classList.remove('hidden');
+        document.getElementById('ct_ten_vt').innerText = ten_vt;
+        let tbody = document.getElementById('bodyChiTiet');
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>';
+
+        // Lấy thông số từ Form lọc hiện tại để truyền xuống API (Chỉ lấy chi tiết trong khoảng thời gian đang lọc)
+        let tu_ngay = document.getElementById('tu_ngay').value;
+        let den_ngay = document.getElementById('den_ngay').value;
+        let khoa_phong = document.getElementById('khoa_phong').value;
+
+        fetch(`/api/chi-tiet-tieu-hao/?vt_id=${vt_id}&tu_ngay=${tu_ngay}&den_ngay=${den_ngay}&khoa_phong=${khoa_phong}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(item => {
+                        let trang_thai = item.is_hong 
+                            ? `<span class="text-red-500 font-bold text-[11px]"><i class="fas fa-heart-broken"></i> Đồ hỏng</span>` 
+                            : `<span class="text-green-600 font-bold text-[11px]"><i class="fas fa-check-circle"></i> Đồ tốt</span>`;
+
+                        html += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-xs font-mono text-gray-500">${item.ngay}</td>
+                                <td class="px-4 py-3 font-medium text-gray-600">${item.khoa_xuat}</td>
+                                <td class="px-4 py-3 font-bold text-gray-800">${item.khoa_nhan}</td>
+                                <td class="px-4 py-3 text-center">${trang_thai}</td>
+                                <td class="px-4 py-3 text-center font-bold text-pink-600 text-base">${item.so_luong}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <button onclick="hoanTacTieuHao(${item.id})" class="text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white px-2 py-1 rounded text-xs font-bold border border-orange-200 shadow-sm transition">
+                                        <i class="fas fa-undo mr-1"></i> Hoàn tác
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-red-400">Không tìm thấy lịch sử chi tiết!</td></tr>';
+                }
+            });
+    }
+
+    function dongPopupChiTiet() {
+        document.getElementById('popupChiTiet').classList.add('hidden');
+    }
+
+    function hoanTacTieuHao(id) {
+        if(!confirm("Bạn có chắc chắn muốn HOÀN TÁC lệnh xuất này? Hệ thống sẽ trừ lịch sử và trả lại nguyên vẹn đồ tốt/đồ hỏng vào kho Nguồn.")) return;
+
+        let csrfToken = document.getElementById('csrf_token').value;
+        fetch(`/api/hoan-tac-tieu-hao/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.msg);
+                location.reload();
+            } else {
+                alert("Lỗi: " + data.msg);
+            }
+        });
+    }
+</script>
+{% endblock %}

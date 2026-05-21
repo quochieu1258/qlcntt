@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Báo Cáo Thanh Lý Tài Sản{% endblock %}
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Báo Cáo Tài Sản Đã Thanh Lý</h2>
+            <p class="text-gray-500 text-sm mt-1">Danh sách các thiết bị đã xuất khỏi hệ thống quản lý.</p>
+        </div>
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-purple-50 text-purple-800 px-6 py-2 rounded-full border border-purple-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Đã thanh lý:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">thiết bị</span>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày thanh lý</label>
+                <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+                <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Khoa Phòng</label>
+                <select id="tim_khoa_phong" name="khoa_phong" class="w-full text-sm"><option value="">-- Tất cả --</option>{% for kp in khoa_phongs %}<option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>{% endfor %}</select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Loại thiết bị</label>
+                <select id="tim_loai_thiet_bi" name="loai_thiet_bi" class="w-full text-sm"><option value="">-- Tất cả --</option>{% for loai in loai_choices %}<option value="{{ loai.0 }}" {% if loai_value == loai.0 %}selected{% endif %}>{{ loai.1 }}</option>{% endfor %}</select>
+            </div>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ khóa</label>
+                <input type="text" name="q" value="{{ q_value }}" placeholder="Nhập tên..." class="w-full border rounded-lg px-3 py-2 text-sm">
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2 border-t pt-4">
+            <a href="{% url 'bao_cao_thanh_ly' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-6 rounded-lg text-sm transition">Làm mới</a>
+            <button type="submit" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-8 rounded-lg text-sm transition"><i class="fas fa-search mr-1"></i> Lọc Báo Cáo</button>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead class="bg-gray-200 text-gray-700 uppercase text-xs font-bold">
+                <tr><th class="px-5 py-4 text-center">STT</th><th class="px-5 py-4 text-left">Mã TB</th><th class="px-5 py-4 text-left">Tên Thiết Bị</th><th class="px-5 py-4 text-left">Khoa Phòng</th><th class="px-5 py-4 text-center text-purple-700">Ngày Thanh Lý</th><th class="px-5 py-4 text-center">Thao tác</th></tr>
+            </thead>
+            <tbody class="text-gray-700 divide-y divide-gray-200">
+                {% for tb in ds_thanh_ly %}
+                <tr class="hover:bg-purple-50 transition">
+                    <td class="px-5 py-4 text-center font-medium">{{ forloop.counter }}</td>
+                    <td class="px-5 py-4 font-mono">{{ tb.ma_thiet_bi|default:"---" }}</td>
+                    <td class="px-5 py-4 font-bold text-gray-800">{{ tb.ten_thiet_bi }} <br><span class="text-xs font-normal text-gray-500">{{ tb.loai_thiet_bi }}</span></td>
+                    <td class="px-5 py-4">{{ tb.khoa_phong.ten_khoa_phong|default:"---" }}</td>
+                    <td class="px-5 py-4 text-center font-bold text-purple-600">{{ tb.ngay_thanh_ly|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-4 text-center flex justify-center space-x-3">
+                        <button onclick="xemChiTiet('{{ tb.ten_thiet_bi|escapejs }}', '{{ tb.ngay_thanh_ly|date:'d/m/Y' }}', '{{ tb.ly_do_thanh_ly|escapejs }}', '{{ tb.chuoi_url_anh }}')" class="text-indigo-500 hover:text-indigo-700 transition" title="Xem chi tiết & Ảnh"><i class="fas fa-eye text-lg"></i></button>
+                        <a href="{% url 'sua_thanh_ly' tb.id %}" class="text-blue-500 hover:text-blue-700 transition" title="Sửa nội dung"><i class="fas fa-edit text-lg"></i></a>
+                        <a href="{% url 'huy_thanh_ly' tb.id %}" onclick="return confirm('Bạn có chắc muốn HỦY THANH LÝ thiết bị này?\n\nThiết bị sẽ được hoàn trả về Danh Sách Tài Sản với trạng thái gốc trước đó.');" class="text-red-500 hover:text-red-700 transition" title="Hủy Thanh Lý (Khôi phục)"><i class="fas fa-undo-alt text-lg"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="px-5 py-10 text-center text-gray-500">Chưa có thiết bị nào được thanh lý.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupChiTiet" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-8 bg-white w-full max-w-lg m-auto rounded-xl shadow-2xl border-t-4 border-purple-600">
+        <button onclick="document.getElementById('popupChiTiet').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-file-invoice text-purple-600 mr-2"></i> Hồ Sơ Thanh Lý</h3>
+        <p class="font-bold text-purple-700 mb-1 text-lg" id="lbl_ten"></p>
+        <p class="text-sm text-gray-600 mb-4"><i class="far fa-calendar-alt mr-1"></i> Ngày xác nhận: <span id="lbl_ngay" class="font-bold text-gray-800"></span></p>
+        
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-700 mb-5">
+            <p class="font-bold text-xs text-gray-500 uppercase mb-1">Lý do thanh lý:</p>
+            <span id="lbl_lydo" class="font-medium text-gray-800 leading-relaxed"></span>
+        </div>
+        
+        <div id="khu_vuc_anh" class="hidden">
+            <p class="font-bold text-xs text-gray-500 uppercase mb-2">Hình ảnh chứng minh <span class="text-gray-400 font-normal normal-case">(Bấm vào ảnh để xem kích thước lớn)</span>:</p>
+            
+            <div id="danh_sach_anh" class="grid grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-1">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const d = { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true, onReady: function(s, ds, i) { new Cleave(i.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] }); }};
+        flatpickr("#tu_ngay", d); flatpickr("#den_ngay", d);
+        new TomSelect("#tim_khoa_phong", { create: false}); new TomSelect("#tim_loai_thiet_bi", { create: false});
+    });
+
+    // HÀM XỬ LÝ CHIA NHỎ CHUỖI ẢNH VÀ HIỂN THỊ LÊN POPUP
+    function xemChiTiet(ten, ngay, lydo, chuoi_img_urls) {
+        document.getElementById('lbl_ten').innerText = ten;
+        document.getElementById('lbl_ngay').innerText = ngay;
+        document.getElementById('lbl_lydo').innerText = lydo;
+        
+        let khuVucAnh = document.getElementById('khu_vuc_anh');
+        let divAnhs = document.getElementById('danh_sach_anh');
+        divAnhs.innerHTML = ''; // Xóa ảnh cũ mỗi khi mở popup mới
+        
+        if (chuoi_img_urls && chuoi_img_urls.trim() !== '') {
+            khuVucAnh.classList.remove('hidden'); // Hiện khu vực ảnh lên
+            
+            // Cắt chuỗi phân cách bởi dấu phẩy thành mảng các link ảnh
+            let urls = chuoi_img_urls.split(',');
+            
+            // Lặp qua từng link và vẽ HTML
+            urls.forEach(url => {
+                if(url.trim() !== '') {
+                    divAnhs.innerHTML += `
+                        <a href="${url}" target="_blank" class="block relative group overflow-hidden rounded-lg border border-gray-200 shadow-sm cursor-pointer" title="Bấm để phóng to">
+                            <img src="${url}" class="w-full h-24 object-cover transform group-hover:scale-110 transition duration-300">
+                            
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition duration-300">
+                                <i class="fas fa-search-plus text-white opacity-0 group-hover:opacity-100 text-xl drop-shadow-md"></i>
+                            </div>
+                        </a>
+                    `;
+                }
+            });
+        } else {
+            khuVucAnh.classList.add('hidden'); // Nếu không có ảnh nào thì ẩn luôn khu vực này
+        }
+        
+        document.getElementById('popupChiTiet').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

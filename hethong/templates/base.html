@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}QLCNTT{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Cấu trúc CSS để xử lý Menu cấp 3 hiển thị bên cạnh cấp 2 */
+        .menu-level-2 { display: none; }
+        .group:hover > .menu-level-2 { display: block; }
+        .menu-level-3 { display: none; left: 100%; top: 0; }
+        .sub-group:hover > .menu-level-3 { display: block; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+    {% block navbar %}
+    <nav class="bg-blue-800 text-white shadow-md relative z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                
+                <div class="flex items-center space-x-4">
+                    <span class="text-xl font-bold tracking-wider">QLCNTT <span class="font-light">APP</span></span>
+                </div>
+
+                <ul class="hidden md:flex space-x-2 h-full">
+                    <li class="h-full"><a href="{% url 'dashboard' %}" class="px-4 flex items-center h-16 hover:bg-blue-700 transition">Trang chủ</a></li>
+                    
+                                        <!-- Chèn thêm đoạn này vào thẻ <ul class="hidden md:flex space-x-2 h-full"> trong base.html -->
+                    <li class="relative group h-full">
+                        <button class="px-4 flex items-center h-16 hover:bg-blue-700 transition">
+                            Danh mục <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                        </button>
+                        <ul class="menu-level-2 absolute left-0 w-56 bg-white text-gray-800 shadow-xl rounded-b-md">
+                            <li class="border-b border-gray-100 hover:bg-gray-50">
+                                <a href="{% url 'them_khoa_phong' %}" class="block px-4 py-3">Thêm Khoa Phòng</a>
+                            </li>
+                            <li class="border-b border-gray-100 hover:bg-gray-50">
+                                <a href="{% url 'them_thiet_bi' %}" class="block px-4 py-3">Thêm Thiết Bị CNTT</a>
+                            </li>
+
+                            <li class="hover:bg-gray-50 rounded-md">
+                                <a href="{% url 'them_vat_tu' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-blue-600 transition">
+                                    Thêm Vật Tư CNTT
+                                </a>
+                            </li>
+                            
+                            <li class="hover:bg-gray-50 rounded-md"></li>
+                            <a href="{% url 'them_nhan_vien' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition border-t border-gray-100">Thêm Nhân Viên</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="relative group h-full">
+                        <button class="px-4 flex items-center h-16 hover:bg-blue-700 transition">
+                            Quản lý thiết bị <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                        </button>
+                        
+                        <ul class="menu-level-2 absolute left-0 w-56 bg-white text-gray-800 shadow-xl rounded-b-md">
+                        <li class="border-t-2 border-gray-200 hover:bg-blue-50 bg-gray-50 rounded-b-md">
+                            <a href="{% url 'danh_sach_tai_san' %}" class="block px-4 py-3 font-bold text-blue-700">
+                                <i class="fas fa-boxes mr-2"></i> Tất cả Tài Sản CNTT
+                            </a>
+                            </li>
+                        <li class="hover:bg-teal-50 bg-gray-50 rounded-b-md border-t border-gray-100">
+                            <a href="{% url 'danh_sach_vat_tu' %}" class="block px-4 py-3 font-bold text-teal-700">
+                                <i class="fas fa-box-open mr-2"></i> Vật Tư CNTT
+                            </a>
+                        </li>
+                        <li class="hover:bg-amber-50 bg-gray-50 rounded-b-md border-t border-gray-100">
+                            <a href="{% url 'ton_kho_khoa_phong' %}" class="block px-4 py-3 font-bold text-amber-600">
+                                <i class="fas fa-warehouse mr-2"></i> Tồn Kho Khoa Phòng
+                            </a>
+                        </li>
+                        <li class="hover:bg-indigo-50 bg-gray-50 rounded-b-md border-t border-gray-100">
+                                <a href="{% url 'danh_sach_phieu_nhap' %}" class="block px-4 py-3 font-bold text-indigo-700">
+                                    <i class="fas fa-file-import mr-2"></i> Quản Lý Phiếu Nhập
+                                </a>
+                        </li>
+                        <li class="hover:bg-rose-50 bg-gray-50 rounded-b-md border-t border-gray-100">
+                            <a href="{% url 'danh_sach_phieu_xuat' %}" class="block px-4 py-3 font-bold text-rose-700">
+                                <i class="fas fa-file-export mr-2"></i> Quản Lý Phiếu Xuất
+                            </a>
+                        </li>
+                        </ul>
+                    </li>
+
+                    <div class="relative group flex items-center h-full">
+                        <a href="#" class="px-3 py-2 flex items-center hover:bg-blue-700 rounded transition duration-200 cursor-pointer text-white">
+                            <span>Báo cáo</span>
+                            <i class="fas fa-chevron-down ml-2 text-[10px] mt-1"></i>
+                        </a>
+                        
+                        <div class="absolute left-0 top-full pt-1 w-56 hidden group-hover:block z-50">
+                            
+                            <div class="bg-white text-gray-800 shadow-xl rounded-md border border-gray-100 overflow-hidden">
+                                
+                                <a href="{% url 'bao_cao_sua_chua' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition">
+                                    <i class="fas fa-file-invoice mr-2"></i> Báo cáo sửa chữa
+                                </a>
+                                
+                                <!-- <a href="{% url 'bao_cao_nhap_xuat' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition border-t border-gray-100">
+                                    <i class="fas fa-exchange-alt mr-2"></i> Báo cáo nhập xuất
+                                </a> -->
+
+                                <a href="{% url 'bao_cao_thiet_bi_hong' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition border-t border-gray-100">
+                                    <i class="fas fa-ban mr-2"></i> Báo cáo thiết bị hư hỏng
+                                </a>
+
+                                <a href="{% url 'bao_cao_thanh_ly' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition border-t border-gray-100">
+                                    <i class="fas fa-dumpster mr-2"></i> Báo cáo tài sản thanh lý
+                                </a>
+                                <a href="{% url 'bao_cao_tieu_hao' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition border-t border-gray-100">
+                                    <i class="fas fa-burn mr-2"></i> Báo cáo vật tư tiêu hao
+                                </a>
+                                <a href="{% url 'bao_cao_chi_tiet_nhap_xuat' %}" class="block px-4 py-3 font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition border-t border-gray-100">
+                                    <i class="fas fa-exchange-alt mr-2"></i> Báo cáo chi tiết nhập xuất
+                                </a>
+                                                    
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="relative group flex items-center h-full">
+                        <a href="{% url 'giao_ban_cntt' %}" class="px-3 py-2 flex items-center hover:bg-blue-700 rounded transition duration-200 cursor-pointer text-white font-medium">
+                            <i class="fas fa-clipboard-list mr-2"></i> Giao ban CNTT
+                        </a>
+                    </div>
+                </ul>
+
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm italic"><i class="fas fa-user-circle mr-1"></i> {{ request.session.username }}</span>
+                    <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm transition">Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

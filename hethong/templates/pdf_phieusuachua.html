@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: "Times New Roman", Times, serif; font-size: 17px; line-height: 1.4; color: black; }
+        .header { width: 100%; display: table; margin-bottom: 25px; }
+        .header-left { display: table-cell; width: 45%; text-align: center; vertical-align: top; }
+        .header-right { display: table-cell; width: 55%; text-align: center; vertical-align: top; }
+        .bold { font-weight: bold; }
+        .underline { text-decoration: underline; }
+        
+        .title { text-align: center; font-size: 20px; font-weight: bold; margin: 40px 0 30px 0; }
+        
+        table.form-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        table.form-table td { border: none; padding: 12px 0; font-size: 18px; vertical-align: bottom;}
+        .label { white-space: nowrap; padding-right: 10px; }
+        .dotted-cell { border-bottom: 2px dotted #000; width: 99%; padding-left: 10px;}
+        .dotted-line-empty { border-bottom: 2px dotted #000; height: 35px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            BỆNH VIỆN SẢN – NHI KIÊN GIANG<br>
+            <span class="bold underline">PHÒNG KẾ HOẠCH TỔNG HỢP</span><br><br>
+            <span class="underline">Số: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/BC-KHTH</span>
+        </div>
+        <div class="header-right">
+            <span class="bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</span><br>
+            <span class="bold underline">Độc lập – Tự do – Hạnh phúc</span><br><br>
+            <em>An Giang, ngày {{ ngay }} tháng {{ thang }} năm {{ nam }}</em>
+        </div>
+    </div>
+
+    <div class="title">PHIẾU MANG THIẾT BỊ SỬA NGOÀI</div>
+
+    <table class="form-table">
+        <tr>
+            <td class="label">Tên thiết bị:</td>
+            <td class="dotted-cell">{{ tb.ten_thiet_bi }}</td>
+        </tr>
+        <tr>
+            <td class="label">Số seri:</td>
+            <td class="dotted-cell">{{ tb.ma_thiet_bi|default:"........................................................................." }}</td>
+        </tr>
+        <tr>
+            <td class="label">Ngày sử dụng:</td>
+            <td class="dotted-cell">{{ ngay_su_dung }}</td>
+        </tr>
+        <tr>
+            <td class="label">Tình trạng hiện tại:</td>
+            <td class="dotted-cell">{{ ls.ghi_chu }}</td>
+        </tr>
+    </table>
+    
+    <div class="dotted-line-empty"></div>
+    <div class="dotted-line-empty" style="margin-bottom: 40px;"></div>
+
+    <div style="text-align: right; padding-right: 20px;">
+        <em>An Giang, ngày {{ ngay }} tháng {{ thang }} năm {{ nam }}</em>
+    </div>
+</body>
+</html>

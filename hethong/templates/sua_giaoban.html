@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Cập Nhật Giao Ban CNTT{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<div class="max-w-4xl mx-auto mt-8 bg-white p-8 rounded-xl shadow-md border-t-4 border-blue-500 mb-10">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4"><i class="fas fa-edit text-blue-500 mr-2"></i> Cập Nhật Phiếu Giao Ban</h2>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-blue-50/50 p-5 rounded-lg border border-blue-100">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Ngày giao ban <span class="text-red-500">*</span></label>
+                <input type="text" id="ngay_giao_ban" name="ngay_giao_ban" value="{{ gb.ngay_giao_ban|date:'Y-m-d' }}" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Trạng thái <span class="text-red-500">*</span></label>
+                <select name="trang_thai" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 bg-white shadow-sm font-bold text-gray-700">
+                    <option value="Đã hoàn thành" {% if gb.trang_thai == 'Đã hoàn thành' %}selected{% endif %}>✅ Đã hoàn thành</option>
+                    <option value="Đang xử lý" {% if gb.trang_thai == 'Đang xử lý' %}selected{% endif %}>🔄 Đang xử lý</option>
+                    <option value="Chưa xử lý" {% if gb.trang_thai == 'Chưa xử lý' %}selected{% endif %}>⚠️ Chưa xử lý</option>
+                    <option value="Cần theo dõi thêm" {% if gb.trang_thai == 'Cần theo dõi thêm' %}selected{% endif %}>👀 Cần theo dõi thêm</option>
+                    <option value="Khác" {% if gb.trang_thai == 'Khác' %}selected{% endif %}>📌 Khác</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Khoa Phòng <span class="text-red-500">*</span></label>
+                <select name="khoa_phong" required class="w-full border rounded-lg px-4 py-2 bg-white">
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if gb.khoa_phong_id == kp.id %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Nhân viên thực hiện <span class="text-red-500">*</span></label>
+                <select name="nhan_vien" required class="w-full border rounded-lg px-4 py-2 bg-white">
+                    {% for nv in nhan_viens %}
+                        <option value="{{ nv.id }}" {% if gb.nhan_vien_id == nv.id %}selected{% endif %}>{{ nv.ten_nhan_vien }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Tình trạng tiếp nhận <span class="text-red-500">*</span></label>
+            <textarea name="tinh_trang_tiep_nhan" rows="5" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 shadow-inner">{{ gb.tinh_trang_tiep_nhan }}</textarea>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Cách xử lý <span class="text-red-500">*</span></label>
+            <textarea name="cach_xu_ly" rows="5" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 shadow-inner">{{ gb.cach_xu_ly }}</textarea>
+        </div>
+
+        <div class="mb-8">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Ghi chú thêm</label>
+            <textarea name="ghi_chu" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 bg-gray-50">{{ gb.ghi_chu|default:'' }}</textarea>
+        </div>
+
+        <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
+            <a href="{% url 'giao_ban_cntt' %}" class="bg-gray-200 hover:bg-gray-300 font-bold py-3 px-8 rounded-lg text-gray-800 transition shadow-sm text-lg">Hủy</a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-lg shadow-md transition flex items-center text-lg">
+                <i class="fas fa-save mr-2"></i> Lưu Cập Nhật
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    flatpickr("#ngay_giao_ban", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+</script>
+{% endblock %}

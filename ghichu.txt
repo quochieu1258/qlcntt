@@ -1,0 +1,2 @@
+CREATE EXTENSION IF NOT EXISTS unaccent; (chay lenh de tim kiem k can kytu hoa thuong)
+wkhtmltopdf(cai dat de genate pdf)

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Cập Nhật Thiết Bị CNTT{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Cập Nhật Thông Tin Thiết Bị</h2>
+        
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Mã thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Mã thiết bị</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           type="text" name="ma_thiet_bi" value="{{ tb.ma_thiet_bi|default_if_none:'' }}">
+                </div>
+                
+                <!-- Tên thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Tên thiết bị <span class="text-red-500">*</span></label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           type="text" name="ten_thiet_bi" value="{{ tb.ten_thiet_bi }}" required>
+                </div>
+
+                <!-- Ngày sử dụng -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Ngày sử dụng</label>
+                    <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+                           type="text" id="ngay_su_dung" name="ngay_su_dung" value="{{ tb.ngay_su_dung|date:'Y-m-d' }}">
+                </div>
+
+                <!-- Loại thiết bị -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Loại thiết bị <span class="text-red-500">*</span></label>
+                    <select class="shadow-sm border border-gray-300 rounded w-full py-2 px-3 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            name="loai_thiet_bi" required>
+                        {% for loai in loai_choices %}
+                            <option value="{{ loai.0 }}" {% if tb.loai_thiet_bi == loai.0 %}selected{% endif %}>{{ loai.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Khoa Phòng -->
+            <div class="mb-8">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Khoa Phòng phân bổ</label>
+                <select class="shadow-sm border border-gray-300 rounded w-full py-2 px-3 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        name="khoa_phong">
+                    <option value="">-- Khoa/Phòng chưa xác định --</option>
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if tb.khoa_phong_id == kp.id %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded transition duration-200" type="submit">
+                    <i class="fas fa-save mr-2"></i> Lưu Thay Đổi
+                </button>
+                <a href="{% url 'danh_sach_tai_san' %}" class="text-gray-500 hover:text-gray-800 font-medium">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    flatpickr("#ngay_su_dung", {
+        dateFormat: "Y-m-d", 
+        altInput: true,      
+        altFormat: "d/m/Y",  
+        locale: "vn",        
+        allowInput: true,    
+        onReady: function(selectedDates, dateStr, instance) {
+            new Cleave(instance.altInput, {
+                date: true,
+                delimiter: '/',
+                datePattern: ['d', 'm', 'Y'] 
+            });
+        }
+    });
+</script>
+{% endblock %}

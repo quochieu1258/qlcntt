@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo Cáo Tổng Hợp Nhập Xuất{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-exchange-alt text-teal-600 mr-2"></i> Báo Cáo Tổng Hợp Nhập / Xuất Vật Tư</h2>
+        <p class="text-gray-500 text-sm mt-1">Danh sách số lượng tổng cộng đã nhập và xuất của từng vật tư trong khoảng thời gian đã chọn</p>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-end">
+        <div>
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày</label>
+            <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 bg-white w-32">
+        </div>
+        <div>
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+            <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 bg-white w-32">
+        </div>
+        
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Lọc theo Khoa / Phòng</label>
+            <select id="khoa_phong" name="khoa_phong" class="w-full text-sm">
+                <option value="">-- Tất cả Khoa / Phòng --</option>
+                {% for kp in khoa_phongs %}
+                    <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex-1 min-w-[250px]">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Lọc theo Vật tư cụ thể</label>
+            <select id="vat_tu" name="vat_tu" class="w-full text-sm">
+                <option value="">-- Tất cả Vật tư (Gõ để tìm) --</option>
+                {% for vt in vat_tus %}
+                    <option value="{{ vt.id }}" {% if vt_value == vt.id|stringformat:"s" %}selected{% endif %}>{{ vt.ten_vat_tu }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="flex gap-2">
+            <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-lg shadow-sm text-sm transition">
+                <i class="fas fa-search mr-1"></i> Tra cứu
+            </button>
+            <a href="{% url 'bao_cao_chi_tiet_nhap_xuat' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm transition" title="Làm mới">
+                <i class="fas fa-undo"></i>
+            </a>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-600">Tổng cộng: <span class="text-teal-600">{{ tong_so }}</span> loại vật tư có phát sinh giao dịch.</span>
+        </div>
+        <table class="min-w-full leading-normal text-sm">
+            <thead>
+                <tr class="bg-white text-gray-700 uppercase text-xs border-b border-gray-200">
+                    <th class="px-5 py-4 text-left w-16 font-semibold">STT</th>
+                    <th class="px-5 py-4 text-left w-32 font-semibold">Mã Vật Tư</th>
+                    <th class="px-5 py-4 text-left font-semibold">Tên Vật Tư</th>
+                    <th class="px-5 py-4 text-center w-48 font-bold bg-green-50 text-green-700 border-x border-green-100">TỔNG NHẬP</th>
+                    <th class="px-5 py-4 text-center w-48 font-bold bg-red-50 text-red-700 border-r border-red-100">TỔNG XUẤT</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-700">
+                {% for item in lich_su %}
+                <tr class="hover:bg-gray-50 transition duration-150">
+                    <td class="px-5 py-4 text-center font-medium">{{ forloop.counter }}</td>
+                    <td class="px-5 py-4 font-mono text-xs text-gray-600">{{ item.ma_vt }}</td>
+                    <td class="px-5 py-4">
+                        <span class="font-bold text-teal-700">{{ item.ten_vat_tu }}</span>
+                        {% if item.is_tieu_hao %}
+                            <span class="ml-2 bg-orange-100 text-orange-700 text-[10px] px-2 py-0.5 rounded-full font-bold">Tiêu hao</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="px-5 py-4 text-center bg-green-50/20 border-x border-gray-100">
+                        {% if item.tong_nhap > 0 %}
+                            <span class="text-green-600 font-extrabold text-lg">+{{ item.tong_nhap }}</span>
+                        {% else %}
+                            <span class="text-gray-300 font-bold">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-5 py-4 text-center bg-red-50/20 border-r border-gray-100">
+                        {% if item.tong_xuat > 0 %}
+                            <span class="text-red-600 font-extrabold text-lg">-{{ item.tong_xuat }}</span>
+                        {% else %}
+                            <span class="text-gray-300 font-bold">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-5 py-10 text-center text-gray-500">
+                        <i class="fas fa-exchange-alt text-4xl mb-3 text-gray-300"></i>
+                        <p>Không tìm thấy lịch sử nhập/xuất nào phù hợp.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Cấu hình DatePicker
+        flatpickr("#tu_ngay", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+        flatpickr("#den_ngay", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+
+        // Kích hoạt thư viện TomSelect cho ô Khoa Phòng (Có thanh Search tích hợp)
+        new TomSelect("#khoa_phong", { 
+            create: false, 
+            placeholder: "-- Tất cả Khoa / Phòng --",
+            plugins: ['dropdown_input'], // Cho phép gõ chữ để tìm
+            sortField: 'text'
+        });
+
+        // Kích hoạt thư viện TomSelect cho ô Vật Tư (Có thanh Search tích hợp)
+        new TomSelect("#vat_tu", { 
+            create: false, 
+            placeholder: "-- Tất cả Vật tư (Gõ để tìm) --",
+            plugins: ['dropdown_input'], // Cho phép gõ chữ để tìm
+            sortField: 'text'
+        });
+    });
+</script>
+{% endblock %}

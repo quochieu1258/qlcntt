@@ -1,0 +1,621 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Tài Sản CNTT{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Danh Sách Tài Sản CNTT</h2>
+            <p class="text-gray-500 text-sm mt-1">Tổng hợp toàn bộ thiết bị đang quản lý trong hệ thống</p>
+        </div>
+
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-blue-50 text-blue-800 px-6 py-2 rounded-full border border-blue-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Hiển thị tổng cộng:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">thiết bị</span>
+        </div>
+
+        <div>
+            <a href="{% url 'them_thiet_bi' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-sm transition duration-200 flex items-center">
+                <i class="fas fa-plus mr-2"></i> Thêm Thiết Bị
+            </a>
+        </div>
+    </div>
+
+    <form id="formBoLoc" method="GET" action="" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 z-10 relative">
+        <input type="hidden" name="sort_by" id="inputSortBy" value="{{ sort_by }}">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Từ khóa</label>
+                <input type="text" name="q" value="{{ q_value }}" placeholder="Tên hoặc mã TB..." 
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Khoa Phòng</label>
+                <select id="tim_khoa_phong" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">-- Tất cả khoa --</option>
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Loại thiết bị</label>
+                <select id="tim_loai_thiet_bi" name="loai_thiet_bi" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">-- Tất cả loại --</option>
+                    {% for loai in loai_choices %}
+                        <option value="{{ loai.0 }}" {% if loai_value == loai.0 %}selected{% endif %}>{{ loai.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-2 uppercase tracking-wide">Trạng thái</label>
+                <select name="trang_thai" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="dang_sua" {% if trang_thai_value == 'dang_sua' %}selected{% endif %}>🛠️ Đang sửa chữa</option>
+                    <option value="binh_thuong" {% if trang_thai_value == 'binh_thuong' %}selected{% endif %}>✅ Đang hoạt động</option>
+                    <option value="hong_han" {% if trang_thai_value == 'hong_han' %}selected{% endif %}>❌ Hỏng không thể sửa</option>
+                </select>
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg shadow-md text-sm transition duration-200">
+                    <i class="fas fa-filter mr-1"></i> Lọc
+                </button>
+                <a href="{% url 'danh_sach_tai_san' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm inline-flex items-center transition" title="Làm mới">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative z-0">
+        <div class="overflow-x-auto">
+            <table class="min-w-full leading-normal text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
+                        <th class="px-5 py-4 text-left">STT</th>
+                        <th class="px-5 py-4 text-left">Mã TB</th>
+                        <th class="px-5 py-4 text-left">Tên Thiết Bị</th>
+                        <th class="px-5 py-4 text-left">Loại</th>
+                        <th class="px-5 py-4 text-left">Khoa Phòng Sử Dụng</th>
+                        
+                        <th onclick="doiSapXep()" class="px-5 py-4 text-center cursor-pointer hover:bg-gray-200 transition select-none group" title="Bấm để sắp xếp">
+                            Số Lần Sửa
+                            {% if sort_by == 'desc' %}
+                                <i class="fas fa-sort-amount-down text-blue-600 ml-1"></i>
+                            {% elif sort_by == 'asc' %}
+                                <i class="fas fa-sort-amount-up text-blue-600 ml-1"></i>
+                            {% else %}
+                                <i class="fas fa-sort text-gray-300 group-hover:text-gray-500 ml-1 transition"></i>
+                            {% endif %}
+                        </th>
+
+                        <th class="px-5 py-4 text-center">Ngày Sử Dụng</th>
+                        <th class="px-5 py-4 text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700">
+                    {% for tb in danh_sach_tb %}
+                    <tr class="transition duration-150 {% if tb.is_hong_han %}bg-gray-100 border-y-2 border-gray-400 opacity-80{% elif tb.dang_sua_chua %}bg-red-100 border-y-2 border-red-400 shadow-inner{% else %}border-b border-gray-200 hover:bg-blue-50{% endif %}">
+                        
+                        <td class="px-5 py-4 whitespace-no-wrap {% if tb.is_hong_han %}border-l-4 border-gray-500{% elif tb.dang_sua_chua %}border-l-4 border-red-600{% else %}border-l-4 border-transparent{% endif %}">
+                            {{ forloop.counter }}
+                        </td>
+                        
+                        <td class="px-5 py-4 whitespace-no-wrap font-medium text-gray-900">{{ tb.ma_thiet_bi|default:"---" }}</td>
+                        <td class="px-5 py-4 whitespace-no-wrap font-bold {% if tb.dang_sua_chua and not tb.is_hong_han %}text-red-700{% else %}text-blue-600{% endif %}">{{ tb.ten_thiet_bi }}</td>
+                        
+                        <td class="px-5 py-4 whitespace-no-wrap">
+                            <span class="bg-blue-100 text-blue-800 py-1 px-3 rounded-full text-xs font-semibold">{{ tb.loai_thiet_bi }}</span>
+                            
+                            {% if tb.is_hong_han %}
+                                <span class="bg-gray-600 text-white py-1 px-2 rounded-full text-[10px] font-bold ml-2 uppercase shadow-sm inline-flex items-center">
+                                    <i class="fas fa-ban mr-1"></i> Hư hỏng
+                                </span>
+                            {% elif tb.dang_sua_chua %}
+                                <span class="bg-red-600 text-white py-1 px-2 rounded-full text-[10px] font-bold ml-2 uppercase shadow-sm animate-pulse inline-flex items-center">
+                                    <i class="fas fa-tools mr-1"></i> Đang sửa
+                                </span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-5 py-4 whitespace-no-wrap">
+                            {{ tb.khoa_phong.ten_khoa_phong|default:"<span class='text-red-500 italic'>Chưa phân bổ</span>"|safe }}
+                        </td>
+
+                        <td class="px-5 py-4 whitespace-no-wrap text-center">
+                            {% if tb.so_lan_sua > 0 %}
+                                <span class="inline-flex items-center justify-center w-7 h-7 bg-red-100 border border-red-200 rounded-full text-xs font-bold text-red-600 shadow-sm">
+                                    {{ tb.so_lan_sua }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center justify-center w-7 h-7 bg-gray-100 border border-gray-200 rounded-full text-xs font-bold text-gray-400">
+                                    0
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-5 py-4 whitespace-no-wrap text-center">{{ tb.ngay_su_dung|date:"d/m/Y"|default:"---" }}</td>
+                        
+                        <td class="px-5 py-4 whitespace-no-wrap text-center flex items-center justify-center space-x-2">
+                            <button onclick="xemLichSu('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}')" class="text-indigo-500 hover:text-indigo-700 mx-1 transition transform hover:scale-110" title="Xem lịch sử sửa chữa">
+                                <i class="fas fa-eye text-lg"></i>
+                            </button>
+                            
+                            {% if tb.dang_sua_chua %}
+                                <button onclick="alert('Cảnh báo: Thiết bị {{ tb.ten_thiet_bi }} hiện ĐANG TRONG QUÁ TRÌNH SỬA CHỮA!');" class="text-gray-400 cursor-not-allowed mx-1" title="Thiết bị đang sửa chữa">
+                                    <i class="fas fa-wrench text-lg opacity-50"></i>
+                                </button>
+                                <button onclick="moPopupHoanTat('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}', '{{ tb.khoa_phong.ten_khoa_phong|default:'Chưa phân bổ'|escapejs }}')" class="text-green-600 hover:text-green-800 transition transform hover:scale-125 mx-1" title="Xác nhận Hoàn Tất">
+                                    <i class="fas fa-check-circle text-xl animate-bounce"></i>
+                                </button>
+                            {% elif tb.is_hong_han %}
+                                <button onclick="moPopupThanhLy('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}')" class="text-gray-600 hover:text-gray-900 transition transform hover:scale-110 mx-1" title="Tiến hành Thanh lý tài sản này">
+                                    <i class="fas fa-times-circle text-xl"></i>
+                                </button>
+                            {% else %}
+                                <button onclick="moPopupSuaChua('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}', '{{ tb.khoa_phong.ten_khoa_phong|default:'Chưa phân bổ'|escapejs }}')" class="text-orange-500 hover:text-orange-700 transition transform hover:scale-110 mx-1" title="Báo Sửa Chữa">
+                                    <i class="fas fa-wrench text-lg"></i>
+                                </button>
+                                <button onclick="moPopupThanhLy('{{ tb.id }}', '{{ tb.ten_thiet_bi|escapejs }}')" class="text-gray-600 hover:text-gray-900 transition transform hover:scale-110 mx-1" title="Thanh lý trực tiếp">
+                                    <i class="fas fa-times-circle text-xl"></i>
+                                </button>
+                            {% endif %}
+
+                            <a href="{% url 'sua_thiet_bi' tb.id %}" class="text-blue-500 hover:text-blue-700 transition transform hover:scale-110 mx-1" title="Sửa">
+                                <i class="fas fa-edit text-lg"></i>
+                            </a>
+                            <a href="{% url 'xoa_thiet_bi' tb.id %}" onclick="return confirm('Bạn có chắc chắn muốn xóa thiết bị này khỏi hệ thống không?');" class="text-red-500 hover:text-red-700 transition transform hover:scale-110 mx-1" title="Xóa">
+                                <i class="fas fa-trash-alt text-lg"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-5 py-8 text-center text-gray-500">
+                            <i class="fas fa-search text-4xl mb-3 text-gray-300"></i>
+                            <p>Không tìm thấy thiết bị nào khớp với kết quả lọc.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="popupLichSu" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[110] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-5xl m-auto rounded-xl shadow-2xl border-t-4 border-indigo-500">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-history text-indigo-500 mr-2"></i> Lịch sử: <span id="ls_ten_thiet_bi" class="text-indigo-600"></span></h3>
+            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">Tổng cộng: <span id="ls_tong_so_lan">0</span> lần sửa</span>
+        </div>
+        <div class="overflow-x-auto max-h-[400px]">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-600 text-xs uppercase">
+                        <th class="px-4 py-3 border-b text-left">Ngày báo sửa</th>
+                        <th class="px-4 py-3 border-b text-left">Nội dung lỗi</th>
+                        <th class="px-4 py-3 border-b text-left">Ngày hoàn tất</th>
+                        <th class="px-4 py-3 border-b text-left">Ghi chú sau sửa</th>
+                        <th class="px-4 py-3 border-b text-center">In Phiếu</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyLichSu" class="text-sm divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+        <div class="flex justify-between items-center mt-4">
+            <div id="phanTrangLichSu" class="flex space-x-2"></div>
+            <button onclick="document.getElementById('popupLichSu').classList.add('hidden')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<div id="popupSuaChua" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center transition-opacity duration-300">
+    <div class="relative p-8 bg-white w-full max-w-md m-auto rounded-xl shadow-2xl border-t-4 border-orange-500 transform transition-all">
+        <button type="button" onclick="dongPopupSuaChua()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-5"><i class="fas fa-tools text-orange-500 mr-2"></i> Phiếu Sửa Chữa</h3>
+        
+        <form id="formSuaChua" onsubmit="submitSuaChuaAjax(event)">
+            {% csrf_token %}
+            <input type="hidden" id="popup_thiet_bi_id" name="thiet_bi_id">
+            <div class="mb-4">
+                <label class="block text-gray-600 text-xs font-bold mb-1">Tên thiết bị</label>
+                <input id="popup_ten_tb" type="text" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-700 font-semibold focus:outline-none cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-600 text-xs font-bold mb-1">Khoa / Phòng</label>
+                <input id="popup_khoa_phong" type="text" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-700 focus:outline-none cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Ngày mang đi sửa <span class="text-red-500">*</span></label>
+                <input id="popup_ngay_sua" type="text" name="ngay_sua_chua" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white" placeholder="dd/mm/yyyy">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Tình trạng / Ghi chú <span class="text-red-500">*</span></label>
+                <textarea id="popup_ghi_chu_sua" name="ghi_chu" rows="3" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Mô tả lỗi..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <a href="#" id="btn_in_phieu_sua" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded shadow-md transition hidden">
+                    <i class="fas fa-print mr-1"></i> In Phiếu Báo Sửa
+                </a>
+                
+                <button type="button" onclick="dongPopupSuaChua()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition">Đóng</button>
+                
+                <button type="submit" id="btn_submit_sua_chua" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-5 rounded shadow-md transition">
+                    <i class="fas fa-save mr-1"></i> Báo Sửa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="popupHoanTat" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center transition-opacity duration-300">
+    <div class="relative p-8 bg-white w-full max-w-md m-auto rounded-xl shadow-2xl border-t-4 border-green-500 transform transition-all">
+        <button type="button" onclick="dongPopupHoanTat()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-5"><i class="fas fa-check-circle text-green-500 mr-2"></i> Xác Nhận Hoàn Tất</h3>
+        <form id="formHoanTat" onsubmit="submitHoanTatAjax(event)">
+            {% csrf_token %}
+            <input type="hidden" id="popup_ht_thiet_bi_id" name="thiet_bi_id">
+            <div class="mb-4">
+                <label class="block text-gray-600 text-xs font-bold mb-1">Tên thiết bị</label>
+                <input id="popup_ht_ten_tb" type="text" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-700 font-semibold focus:outline-none cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-600 text-xs font-bold mb-1">Khoa / Phòng</label>
+                <input id="popup_ht_khoa_phong" type="text" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-700 focus:outline-none cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Ngày nhận về <span class="text-red-500">*</span></label>
+                <input id="popup_ht_ngay_sua" type="text" name="ngay_hoan_tat" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" placeholder="dd/mm/yyyy">
+            </div>
+            
+            <div class="mb-4 bg-gray-50 p-3 rounded border border-gray-200">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="popup_ht_check_hong" name="check_hong_han" class="form-checkbox h-5 w-5 text-gray-600 rounded focus:ring-gray-500 border-gray-300 transition duration-150 ease-in-out">
+                    <span class="ml-2 text-sm font-bold text-gray-700">Hư hỏng không thể sửa chữa (Chờ thanh lý)</span>
+                </label>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Ghi chú sau sửa chữa</label>
+                <textarea id="popup_ht_ghi_chu" name="ghi_chu_hoan_tat" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Chi tiết..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <a href="#" id="btn_in_phieu_hoan_tat" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded shadow-md transition hidden">
+                    <i class="fas fa-print mr-1"></i> In Phiếu Đã Sửa
+                </a>
+
+                <button type="button" onclick="dongPopupHoanTat()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition">Đóng</button>
+                
+                <button type="submit" id="btn_submit_hoan_tat" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded shadow-md transition">
+                    <i class="fas fa-check mr-1"></i> Xác nhận Xong
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="popupThanhLy" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center transition-opacity duration-300">
+    <div class="relative p-8 bg-white w-full max-w-md m-auto rounded-xl shadow-2xl border-t-4 border-gray-700 transform transition-all">
+        <button type="button" onclick="dongPopupThanhLy()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-5"><i class="fas fa-times-circle text-gray-600 mr-2"></i> Thanh Lý Tài Sản</h3>
+        
+        <form method="POST" action="{% url 'thanh_ly_tai_san' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" id="popup_tl_thiet_bi_id" name="thiet_bi_id">
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-gray-600 text-xs font-bold mb-1">Tên thiết bị</label>
+                    <input id="popup_tl_ten_tb" type="text" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-700 font-semibold focus:outline-none cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Ngày thanh lý <span class="text-red-500">*</span></label>
+                    <input id="popup_tl_ngay" type="text" name="ngay_thanh_ly" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 bg-white" placeholder="dd/mm/yyyy">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Lý do thanh lý <span class="text-red-500">*</span></label>
+                <textarea name="ghi_chu" rows="2" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500" placeholder="Thiết bị cháy main, hỏng nguồn..."></textarea>
+            </div>
+            
+            <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-3 border-b border-gray-200 pb-2">
+                    <label class="block text-sm font-bold text-gray-700">Hình ảnh chứng minh</label>
+                    
+                    <button type="button" onclick="document.getElementById('input_chon_anh_tl').click()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-xs transition flex items-center shadow-sm">
+                        <i class="fas fa-plus mr-1"></i> Thêm ảnh
+                    </button>
+                    <input type="file" id="input_chon_anh_tl" name="hinh_anh" accept="image/*" multiple class="hidden">
+                </div>
+                
+                <div class="flex flex-wrap gap-3" id="khu_vuc_anh_moi_tl"></div>
+                <p id="txt_trong_tl" class="text-sm text-gray-400 italic mt-1">Chưa có hình ảnh nào.</p>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="dongPopupThanhLy()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition">Hủy</button>
+                <button type="submit" class="bg-gray-700 hover:bg-black text-white font-bold py-2 px-5 rounded shadow-md transition">
+                    <i class="fas fa-check mr-1"></i> Xác Nhận
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse-once {
+        0% { transform: scale(0.9); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pulse-once { animation: pulse-once 0.3s ease-out forwards; }
+</style>
+
+<script>
+    let currentTbId = null;
+    let isSuaChuaSuccess = false; 
+    let isHoanTatSuccess = false;
+    
+    function doiSapXep() {
+        let inputSort = document.getElementById('inputSortBy');
+        inputSort.value = inputSort.value === 'desc' ? 'asc' : 'desc';
+        document.getElementById('formBoLoc').submit();
+    }
+
+    function xemLichSu(id, ten, page = 1) {
+        currentTbId = id; 
+        document.getElementById('ls_ten_thiet_bi').innerText = ten;
+        document.getElementById('popupLichSu').classList.remove('hidden');
+        
+        fetch(`/api/lich-su-sua-chua/${id}/?page=${page}`).then(res => res.json()).then(data => {
+            document.getElementById('ls_tong_so_lan').innerText = data.tong_so_lan;
+            let html = data.lich_su.length === 0 ? '<tr><td colspan="5" class="py-4 text-center text-gray-500 italic">Chưa có lịch sử</td></tr>' : '';
+            
+            data.lich_su.forEach(item => {
+                
+                // Nút in phiếu Báo Sửa (Luôn hiện, màu cam)
+                let btnInSua = `<a href="/api/in-phieu-sua-chua/${item.id}/" target="_blank" class="text-orange-500 hover:text-orange-700 mx-1 transition transform hover:scale-125 inline-block" title="In phiếu báo sửa"><i class="fas fa-print"></i></a>`;
+                
+                // Nút in phiếu Hoàn Tất (Chỉ hiện màu xanh khi đã xong, chưa xong thì màu xám mờ)
+                let btnInXong = item.ngay_ht !== "Chưa xong" 
+                    ? `<a href="/api/in-phieu-hoan-tat/${item.id}/" target="_blank" class="text-green-600 hover:text-green-800 mx-1 transition transform hover:scale-125 inline-block" title="In phiếu hoàn tất"><i class="fas fa-print"></i></a>` 
+                    : `<span class="text-gray-300 mx-1 cursor-not-allowed" title="Chưa hoàn tất"><i class="fas fa-print"></i></span>`;
+
+                html += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="px-4 py-3 text-red-600 font-medium">${item.ngay_sua}</td>
+                        <td class="px-4 py-3 text-gray-600">${item.ghi_chu}</td>
+                        <td class="px-4 py-3 text-green-600 font-medium">${item.ngay_ht}</td>
+                        <td class="px-4 py-3 text-gray-600">${item.ghi_chu_ht}</td>
+                        <td class="px-4 py-3 text-center text-lg whitespace-nowrap">${btnInSua} ${btnInXong}</td>
+                    </tr>`;
+            });
+            document.getElementById('bodyLichSu').innerHTML = html;
+            renderPhanTrang(data, ten);
+        });
+    }
+
+    function renderPhanTrang(data, ten) {
+        let pt = document.getElementById('phanTrangLichSu'); pt.innerHTML = '';
+        if (data.total_pages > 1) {
+            if (data.has_previous) pt.innerHTML += `<button onclick="xemLichSu('${currentTbId}', '${ten}', ${data.current_page - 1})" class="px-3 py-1 bg-gray-100 rounded text-xs">Trước</button>`;
+            pt.innerHTML += `<span class="px-3 py-1 text-xs font-bold">Trang ${data.current_page}/${data.total_pages}</span>`;
+            if (data.has_next) pt.innerHTML += `<button onclick="xemLichSu('${currentTbId}', '${ten}', ${data.current_page + 1})" class="px-3 py-1 bg-gray-100 rounded text-xs">Tiếp</button>`;
+        }
+    }
+
+    function moPopupSuaChua(id, ten, khoa) {
+        document.getElementById('popup_thiet_bi_id').value = id;
+        document.getElementById('popup_ten_tb').value = ten;
+        document.getElementById('popup_khoa_phong').value = khoa;
+        
+        document.getElementById('popup_ghi_chu_sua').value = '';
+        document.getElementById('btn_in_phieu_sua').classList.add('hidden');
+        document.getElementById('btn_submit_sua_chua').classList.remove('hidden');
+        isSuaChuaSuccess = false;
+
+        document.getElementById('popupSuaChua').classList.remove('hidden');
+    }
+    
+    function dongPopupSuaChua() { 
+        if(isSuaChuaSuccess) {
+            location.reload();
+        } else {
+            document.getElementById('popupSuaChua').classList.add('hidden'); 
+        }
+    }
+
+    function submitSuaChuaAjax(e) {
+        e.preventDefault(); 
+        
+        let tb_id = document.getElementById('popup_thiet_bi_id').value;
+        let ngay_sua = document.getElementById('popup_ngay_sua').value;
+        let ghi_chu = document.getElementById('popup_ghi_chu_sua').value;
+        let csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        fetch('/api/luu-sua-chua-ajax/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ thiet_bi_id: tb_id, ngay_sua_chua: ngay_sua, ghi_chu: ghi_chu })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert(data.msg); 
+                isSuaChuaSuccess = true;
+                
+                document.getElementById('btn_submit_sua_chua').classList.add('hidden');
+                
+                let btnIn = document.getElementById('btn_in_phieu_sua');
+                btnIn.href = `/api/in-phieu-sua-chua/${data.ls_id}/`;
+                btnIn.classList.remove('hidden');
+            } else {
+                alert("Lỗi: " + data.msg);
+            }
+        });
+    }
+
+    function moPopupHoanTat(id, ten, khoa) {
+        document.getElementById('popup_ht_thiet_bi_id').value = id;
+        document.getElementById('popup_ht_ten_tb').value = ten;
+        document.getElementById('popup_ht_khoa_phong').value = khoa;
+        
+        document.getElementById('popup_ht_ghi_chu').value = '';
+        document.getElementById('popup_ht_check_hong').checked = false;
+        
+        document.getElementById('btn_in_phieu_hoan_tat').classList.add('hidden');
+        document.getElementById('btn_submit_hoan_tat').classList.remove('hidden');
+        isHoanTatSuccess = false;
+
+        document.getElementById('popupHoanTat').classList.remove('hidden');
+    }
+    
+    function dongPopupHoanTat() { 
+        if(isHoanTatSuccess) {
+            location.reload(); 
+        } else {
+            document.getElementById('popupHoanTat').classList.add('hidden'); 
+        }
+    }
+
+    function submitHoanTatAjax(e) {
+        e.preventDefault();
+        
+        let tb_id = document.getElementById('popup_ht_thiet_bi_id').value;
+        let ngay_ht = document.getElementById('popup_ht_ngay_sua').value;
+        let ghi_chu_ht = document.getElementById('popup_ht_ghi_chu').value;
+        let check_hong = document.getElementById('popup_ht_check_hong').checked;
+        let csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        fetch('/api/hoan-tat-sua-chua-ajax/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ 
+                thiet_bi_id: tb_id, 
+                ngay_hoan_tat: ngay_ht, 
+                ghi_chu_hoan_tat: ghi_chu_ht,
+                check_hong_han: check_hong
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert(data.msg);
+                isHoanTatSuccess = true;
+                
+                document.getElementById('btn_submit_hoan_tat').classList.add('hidden');
+                
+                let btnIn = document.getElementById('btn_in_phieu_hoan_tat');
+                btnIn.href = `/api/in-phieu-hoan-tat/${data.ls_id}/`;
+                btnIn.classList.remove('hidden');
+            } else {
+                alert("Lỗi: " + data.msg);
+            }
+        });
+    }
+
+    let mangAnhMoiTL = []; 
+    const inputChonAnhTL = document.getElementById('input_chon_anh_tl');
+    const khuVucAnhMoiTL = document.getElementById('khu_vuc_anh_moi_tl');
+    const txtTrongTL = document.getElementById('txt_trong_tl');
+
+    function moPopupThanhLy(id, ten) {
+        document.getElementById('popup_tl_thiet_bi_id').value = id;
+        document.getElementById('popup_tl_ten_tb').value = ten;
+        
+        mangAnhMoiTL = [];
+        if(inputChonAnhTL) inputChonAnhTL.value = '';
+        capNhatGiaoDienAnhMoiTL();
+
+        document.getElementById('popupThanhLy').classList.remove('hidden');
+    }
+
+    function dongPopupThanhLy() { document.getElementById('popupThanhLy').classList.add('hidden'); }
+
+    if(inputChonAnhTL) {
+        inputChonAnhTL.addEventListener('change', function(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                mangAnhMoiTL.push(files[i]);
+            }
+            capNhatGiaoDienAnhMoiTL();
+        });
+    }
+
+    function xoaAnhMoiTL(index) {
+        mangAnhMoiTL.splice(index, 1);
+        capNhatGiaoDienAnhMoiTL();
+    }
+
+    function capNhatGiaoDienAnhMoiTL() {
+        khuVucAnhMoiTL.innerHTML = '';
+        const dataTransfer = new DataTransfer(); 
+
+        mangAnhMoiTL.forEach((file, index) => {
+            dataTransfer.items.add(file); 
+
+            let objectUrl = URL.createObjectURL(file);
+            let divHTML = `
+                <div class="relative group w-20 h-20 animate-pulse-once">
+                    <img src="${objectUrl}" class="w-full h-full object-cover rounded-lg border border-gray-300 shadow-sm">
+                    
+                    <button type="button" onclick="xoaAnhMoiTL(${index})" class="absolute -top-2 -right-2 bg-white text-red-500 hover:text-white hover:bg-red-500 rounded-full w-5 h-5 flex items-center justify-center shadow-md border border-red-200 transition z-20" title="Bỏ chọn ảnh này">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+            khuVucAnhMoiTL.innerHTML += divHTML;
+        });
+
+        inputChonAnhTL.files = dataTransfer.files;
+
+        if (txtTrongTL) {
+            txtTrongTL.style.display = mangAnhMoiTL.length > 0 ? 'none' : 'block';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateConfig = {
+            dateFormat: "Y-m-d", 
+            altInput: true,      
+            altFormat: "d/m/Y",  
+            locale: "vn",        
+            allowInput: true,
+            defaultDate: "today",
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, {
+                    date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] 
+                });
+            }
+        };
+
+        flatpickr("#popup_ngay_sua", dateConfig);
+        flatpickr("#popup_ht_ngay_sua", dateConfig);
+        flatpickr("#popup_tl_ngay", dateConfig);
+
+        new TomSelect("#tim_khoa_phong", { create: false, placeholder: "-- Tất cả khoa phòng --" });
+        new TomSelect("#tim_loai_thiet_bi", { create: false, placeholder: "-- Tất cả loại thiết bị --" });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Phiếu Xuất Kho{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+
+<div class="container mx-auto mt-4 relative">
+    
+    <div class="flex justify-between items-center mb-6 relative">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Quản Lý Phiếu Xuất Kho</h2>
+            <p class="text-gray-500 text-sm mt-1">Lịch sử xuất vật tư ra sử dụng. <span class="font-bold text-rose-500">(Nháy đúp vào phiếu để xem chi tiết)</span></p>
+        </div>
+
+        <div class="absolute left-1/2 transform -translate-x-1/2 bg-rose-50 text-rose-800 px-6 py-2 rounded-full border border-rose-200 shadow-sm flex items-center">
+            <span class="text-sm font-medium text-gray-600 mr-2">Tổng số:</span> 
+            <span class="font-extrabold text-xl">{{ tong_so }}</span> 
+            <span class="text-sm font-medium text-gray-600 ml-2">phiếu xuất</span>
+        </div>
+    </div>
+
+    <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex gap-4 items-end">
+        <div class="w-1/4">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Từ ngày</label>
+            <input type="text" id="tu_ngay" name="tu_ngay" value="{{ tu_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+        </div>
+        <div class="w-1/4">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Đến ngày</label>
+            <input type="text" id="den_ngay" name="den_ngay" value="{{ den_ngay }}" placeholder="dd/mm/yyyy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-6 rounded-lg shadow-sm text-sm transition">
+                <i class="fas fa-filter mr-1"></i> Lọc Phiếu
+            </button>
+            <a href="{% url 'danh_sach_phieu_xuat' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg shadow-sm text-sm transition" title="Làm mới">
+                <i class="fas fa-undo"></i>
+            </a>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+        <table class="min-w-full leading-normal text-sm">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold border-b border-gray-200">
+                    <th class="px-5 py-4 text-center">STT</th>
+                    <th class="px-5 py-4 text-center">Ngày Phiếu</th>
+                    <th class="px-5 py-4 text-left">Mã Phiếu</th>
+                    <th class="px-5 py-4 text-center">Số Loại Vật Tư</th>
+                    <th class="px-5 py-4 text-center">Tổng SL Xuất</th>
+                    <th class="px-5 py-4 text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 divide-y divide-gray-100">
+                {% for phieu in danh_sach_phieu %}
+                <tr ondblclick="xemChiTiet('{{ phieu.id }}', '{{ phieu.ma_phieu }}', '{{ phieu.ngay_phieu|date:'d/m/Y' }}')" class="hover:bg-rose-50 transition duration-150 cursor-pointer group">
+                    <td class="px-5 py-4 text-center font-medium">{{ forloop.counter }}</td>
+                    <td class="px-5 py-4 text-center font-bold text-gray-800">{{ phieu.ngay_phieu|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-4 font-mono font-bold text-rose-600">{{ phieu.ma_phieu }}</td>
+                    <td class="px-5 py-4 text-center"><span class="bg-gray-100 text-gray-700 py-1 px-3 rounded-full font-bold">{{ phieu.so_mon|default:0 }} loại</span></td>
+                    <td class="px-5 py-4 text-center"><span class="bg-red-100 text-red-700 py-1 px-3 rounded-full font-bold">{{ phieu.tong_sl|default:0 }} món</span></td>
+                    <td class="px-5 py-4 text-center flex items-center justify-center space-x-3">
+                        <button onclick="xemChiTiet('{{ phieu.id }}', '{{ phieu.ma_phieu }}', '{{ phieu.ngay_phieu|date:'d/m/Y' }}')" class="text-rose-400 hover:text-rose-600 transition transform hover:scale-110" title="Xem chi tiết">
+                            <i class="fas fa-eye text-lg"></i>
+                        </button>
+                        
+                        <a href="{% url 'sua_phieu_xuat' phieu.id %}" class="text-blue-500 hover:text-blue-700 transition transform hover:scale-110" title="Sửa phiếu">
+                            <i class="fas fa-edit text-lg"></i>
+                        </a>
+                        
+                        <a href="{% url 'xoa_phieu_xuat' phieu.id %}" onclick="return confirm('CẢNH BÁO: Xóa phiếu [{{ phieu.ma_phieu }}]?\n\nToàn bộ vật tư của phiếu này sẽ ĐƯỢC CỘNG TRẢ LẠI vào kho!');" class="text-red-500 hover:text-red-700 transition transform hover:scale-110" title="Xóa phiếu">
+                            <i class="fas fa-trash-alt text-lg"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-5 py-10 text-center text-gray-500">
+                        <i class="fas fa-file-export text-4xl mb-3 text-gray-300"></i>
+                        <p>Không tìm thấy phiếu xuất kho nào.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="popupChiTiet" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+    <div class="relative p-6 bg-white w-full max-w-3xl m-auto rounded-xl shadow-2xl border-t-4 border-rose-500">
+        <button type="button" onclick="dongPopup()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <div class="mb-5 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800"><i class="fas fa-box-open text-rose-500 mr-2"></i> Chi Tiết Phiếu Xuất</h3>
+            <p class="text-gray-600 mt-2 font-medium">Mã phiếu: <span id="lbl_ma_phieu" class="text-rose-600 font-bold ml-1"></span> <span class="mx-3">|</span> Ngày xuất: <span id="lbl_ngay_phieu" class="text-gray-800 font-bold ml-1"></span></p>
+        </div>
+        <div class="overflow-x-auto max-h-[400px] border rounded-lg">
+            <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100 text-gray-700 sticky top-0">
+                    <tr><th class="px-4 py-3">STT</th><th class="px-4 py-3">Mã Vật Tư</th><th class="px-4 py-3">Tên Vật Tư</th><th class="px-4 py-3 text-center">Số Lượng Xuất</th></tr>
+                </thead>
+                <tbody id="bodyChiTiet" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+        <div class="mt-4 flex justify-end space-x-3">
+            <a href="#" id="btn_in_phieu" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-6 rounded-lg transition flex items-center hidden">
+                <i class="fas fa-print mr-2"></i> In phiếu Xuất
+            </a>
+            <button onclick="dongPopup()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateConfig = {
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true,
+            onReady: function(selectedDates, dateStr, instance) {
+                new Cleave(instance.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] });
+            }
+        };
+        flatpickr("#tu_ngay", dateConfig); flatpickr("#den_ngay", dateConfig);
+    });
+
+    function xemChiTiet(phieuId, maPhieu, ngayPhieu) {
+        document.getElementById('lbl_ma_phieu').innerText = maPhieu;
+        document.getElementById('lbl_ngay_phieu').innerText = ngayPhieu;
+        document.getElementById('popupChiTiet').classList.remove('hidden');
+        // Cập nhật link tải và bật hiển thị nút In Phiếu Xuất
+        let btnIn = document.getElementById('btn_in_phieu');
+        btnIn.href = `/api/in-phieu-xuat/${phieuId}/`;
+        btnIn.classList.remove('hidden');
+        document.getElementById('bodyChiTiet').innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center"><i class="fas fa-spinner fa-spin mr-2"></i> Đang tải...</td></tr>';
+
+        fetch(`/api/chi-tiet-phieu-xuat/${phieuId}/`)
+            .then(res => res.json())
+            .then(data => {
+                let html = '';
+                if (data.data.length === 0) {
+                    html = '<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Phiếu rỗng!</td></tr>';
+                } else {
+                    data.data.forEach((item, index) => {
+                        html += `<tr class="hover:bg-gray-50"><td class="px-4 py-3">${index + 1}</td><td class="px-4 py-3 font-mono text-gray-500">${item.ma_vt}</td><td class="px-4 py-3 font-bold text-rose-700">${item.ten_vt}</td><td class="px-4 py-3 text-center font-bold text-red-600 text-lg">${item.so_luong}</td></tr>`;
+                    });
+                }
+                document.getElementById('bodyChiTiet').innerHTML = html;
+            });
+    }
+    function dongPopup() { document.getElementById('popupChiTiet').classList.add('hidden'); }
+</script>
+{% endblock %}

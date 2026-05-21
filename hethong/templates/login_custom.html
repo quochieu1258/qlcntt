@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Đăng nhập hệ thống{% endblock %}
+{% block navbar %}{% endblock %}
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
+        
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-800">Đăng Nhập</h2>
+            <p class="text-gray-500 mt-2 text-sm">Hệ thống Quản lý CNTT</p>
+        </div>
+        
+        {% if error %}
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm" role="alert">
+                <p class="font-medium">Lỗi đăng nhập!</p>
+                <p class="text-sm">{{ error }}</p>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="mb-5">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="nhap_username">
+                    Tên đăng nhập
+                </label>
+                <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+                       id="nhap_username" type="text" name="nhap_username" required placeholder="Nhập tài khoản...">
+            </div>
+            
+            <div class="mb-8">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="nhap_password">
+                    Mật khẩu
+                </label>
+                <input class="shadow-sm appearance-none border border-gray-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+                       id="nhap_password" type="password" name="nhap_password" required placeholder="Nhập mật khẩu...">
+            </div>
+            
+            <div class="flex items-center justify-center">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded w-full shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:-translate-y-1" 
+                        type="submit">
+                    Đăng Nhập
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

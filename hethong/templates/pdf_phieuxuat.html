@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: "Times New Roman", Times, serif; font-size: 15px; line-height: 1.4; color: black; }
+        .header { width: 100%; display: table; margin-bottom: 25px; }
+        .header-left { display: table-cell; width: 65%; text-align: left; vertical-align: top; }
+        .header-right { display: table-cell; width: 35%; text-align: center; vertical-align: top; }
+        .bold { font-weight: bold; }
+        
+        .title { text-align: center; font-size: 22px; font-weight: bold; margin: 30px 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid black; padding: 6px 8px; }
+        th { text-align: center; font-weight: bold; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        
+        .footer { width: 100%; display: table; margin-top: 10px; page-break-inside: avoid; }
+        .footer-col { display: table-cell; width: 33.33%; text-align: center; vertical-align: top; }
+        .signature-space { height: 80px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-left">
+            SỞ Y TẾ TỈNH KIÊN GIANG<br>
+            <span class="bold">BỆNH VIỆN SẢN - NHI KIÊN GIANG</span><br><br>
+            <span class="bold">Khoa xuất (Nguồn):</span> {{ kp_xuat }}<br>
+            <span class="bold">Khoa phòng nhận:</span> {{ kp_nhan }}
+        </div>
+        <div class="header-right">
+            MS: 01D/BV-01<br>
+            <span class="bold">Số: {{ phieu.ma_phieu }}</span>
+        </div>
+    </div>
+
+    <div class="title">PHIẾU XUẤT KHO VẬT TƯ</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 6%;">Số TT</th>
+                <th style="width: 14%;">Mã</th>
+                <th style="width: 45%;">Tên vật tư, linh kiện hành chính</th>
+                <th style="width: 10%;">Đvt</th>
+                <th style="width: 25%;">Số lượng xuất</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ct in chi_tiet %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="text-center">{{ ct.vat_tu.ma_vat_tu|default:"---" }}</td>
+                <td>{{ ct.vat_tu.ten_vat_tu }}</td>
+                <td class="text-center">Cái</td>
+                <td class="text-center bold">{{ ct.so_luong }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td colspan="4" class="text-right bold">CỘNG TỔNG SỐ LƯỢNG XUẤT:</td>
+                <td class="text-center bold" style="font-size: 16px;">{{ tong_sl }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="text-right" style="padding-right: 40px; margin-bottom: 10px;">
+        <em>Ngày {{ ngay }} tháng {{ thang }} năm {{ nam }}</em>
+    </div>
+    
+    <div class="footer">
+        <div class="footer-col">
+            <span class="bold">Người lập phiếu</span><br>
+            <em>(Ký, họ tên)</em>
+            <div class="signature-space"></div>
+        </div>
+        <div class="footer-col">
+            <span class="bold">Người nhận hàng</span><br>
+            <em>(Ký, họ tên)</em>
+            <div class="signature-space"></div>
+        </div>
+        <div class="footer-col">
+            <span class="bold">Trưởng khoa / Trưởng phòng</span><br>
+            <em>(Ký, họ tên)</em>
+            <div class="signature-space"></div>
+        </div>
+    </div>
+
+</body>
+</html>
