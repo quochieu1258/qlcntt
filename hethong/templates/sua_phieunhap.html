@@ -32,6 +32,14 @@
                 <label class="block text-sm font-bold text-gray-700 mb-2">Ngày nhập phiếu *</label>
                 <input type="text" id="nk_ngay_phieu" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 focus:ring-blue-500 focus:outline-none bg-white">
             </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Khoa / Phòng nhập kho *</label>
+                <select id="nk_khoa_phong" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:outline-none bg-white">
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if phieu.khoa_phong_id == kp.id %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
 
         <div class="flex gap-4 items-end mb-4 border-b pb-4">
@@ -93,6 +101,7 @@
         });
 
         tsVatTu = new TomSelect("#nk_chon_vat_tu", { create: false, placeholder: "-- Tìm vật tư... --" });
+        tsKhoaPhong = new TomSelect("#nk_khoa_phong", { create: false, placeholder: "-- Chọn khoa phòng nhập --" });
     });
 
     function xuLyEnter(e) { if (e.key === 'Enter') { e.preventDefault(); themVaoLuoi(); } }
@@ -133,24 +142,39 @@
         });
         tbody.innerHTML = html;
     }
-
-    function capNhatPhieu() {
+function capNhatPhieu() {
         let ngay_phieu = document.getElementById('nk_ngay_phieu').value;
+        let khoa_phong_id = document.getElementById('nk_khoa_phong').value; // Lấy ID khoa phòng đang chọn
         let csrfToken = document.getElementById('csrf_token').value;
 
         if (!ngay_phieu) { alert('Thiếu ngày phiếu!'); return; }
+        if (!khoa_phong_id) { alert('Vui lòng chọn Khoa / Phòng nhập kho!'); return; }
         if (danhSachLuoi.length === 0) { alert('Lưới vật tư đang trống!'); return; }
 
+        // Gọi API gửi dữ liệu xuống Backend
         fetch('/api/cap-nhat-phieu-nhap/{{ phieu.id }}/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ ngay_phieu: ngay_phieu, items: danhSachLuoi })
-        }).then(res => res.json()).then(data => {
+            body: JSON.stringify({ 
+                ngay_phieu: ngay_phieu, 
+                khoa_phong_id: khoa_phong_id, 
+                items: danhSachLuoi 
+            })
+        })
+        .then(res => res.json()) // Chờ Backend trả lời
+        .then(data => {
             if (data.status === 'success') {
-                alert(data.msg);
-                window.location.href = "{% url 'danh_sach_phieu_nhap' %}";
-            } else { alert("Lỗi: " + data.msg); }
+                alert(data.msg); // Hiện thông báo thành công
+                window.location.href = "{% url 'danh_sach_phieu_nhap' %}"; // Chuyển về trang danh sách
+            } else { 
+                alert("Lỗi: " + data.msg); // Báo lỗi nếu có
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Có lỗi kết nối máy chủ khi lưu phiếu!");
         });
+    
     }
 </script>
 {% endblock %}

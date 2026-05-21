@@ -90,11 +90,31 @@
 </div>
 
 <div id="popupChiTiet" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
-    <div class="relative p-6 bg-white w-full max-w-3xl m-auto rounded-xl shadow-2xl border-t-4 border-rose-500">
+    <div class="relative p-6 bg-white w-full max-w-4xl m-auto rounded-xl shadow-2xl border-t-4 border-rose-500">
         <button type="button" onclick="dongPopup()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
         <div class="mb-5 pb-4 border-b">
-            <h3 class="text-2xl font-bold text-gray-800"><i class="fas fa-box-open text-rose-500 mr-2"></i> Chi Tiết Phiếu Xuất</h3>
-            <p class="text-gray-600 mt-2 font-medium">Mã phiếu: <span id="lbl_ma_phieu" class="text-rose-600 font-bold ml-1"></span> <span class="mx-3">|</span> Ngày xuất: <span id="lbl_ngay_phieu" class="text-gray-800 font-bold ml-1"></span></p>
+            <h3 class="text-2xl font-bold text-gray-800 mb-3"><i class="fas fa-box-open text-rose-500 mr-2"></i> Chi Tiết Phiếu Xuất</h3>
+            
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center">
+                        <span class="text-gray-500 mr-2">Mã phiếu:</span>
+                        <span id="lbl_ma_phieu" class="text-rose-600 font-bold uppercase tracking-wider"></span>
+                    </div>
+                    <div class="hidden sm:block text-gray-300">|</div>
+                    <div class="flex items-center">
+                        <span class="text-gray-500 mr-2">Ngày xuất:</span>
+                        <span id="lbl_ngay_phieu" class="text-gray-800 font-bold"></span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center bg-white px-3 py-1.5 rounded border border-gray-100 shadow-sm">
+                    <span class="text-gray-500 mr-2"><i class="fas fa-route text-gray-400 mr-1"></i>Chi Tiết Chuyển:</span>
+                    <span id="lbl_khoa_xuat" class="text-red-600 font-bold"></span>
+                    <i class="fas fa-arrow-right text-gray-400 mx-2 text-xs"></i>
+                    <span id="lbl_khoa_nhan" class="text-green-600 font-bold"></span>
+                </div>
+            </div>
         </div>
         <div class="overflow-x-auto max-h-[400px] border rounded-lg">
             <table class="min-w-full text-sm text-left">
@@ -137,6 +157,8 @@
         fetch(`/api/chi-tiet-phieu-xuat/${phieuId}/`)
             .then(res => res.json())
             .then(data => {
+                document.getElementById('lbl_khoa_xuat').innerText = data.ten_khoa_xuat;
+                document.getElementById('lbl_khoa_nhan').innerText = data.ten_khoa_nhan;
                 let html = '';
                 if (data.data.length === 0) {
                     html = '<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Phiếu rỗng!</td></tr>';

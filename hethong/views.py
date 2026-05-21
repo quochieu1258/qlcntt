@@ -676,6 +676,13 @@ def danh_sach_phieu_nhap_view(request):
 def chi_tiet_phieu_nhap_api(request, phieu_id):
     if not request.session.get('is_login'): return JsonResponse({'status': 'error'})
     
+    # Lấy thông tin khoa phòng đã nhập kèm theo phiếu
+    try:
+        phieu = PhieuNhapKho.objects.select_related('khoa_phong').get(id=phieu_id)
+        ten_khoa = phieu.khoa_phong.ten_khoa_phong if phieu.khoa_phong else "Chưa phân bổ"
+    except Exception:
+        ten_khoa = "---"
+
     chi_tiet = ChiTietPhieuNhap.objects.filter(phieu_nhap_id=phieu_id).select_related('vat_tu')
     data = []
     for ct in chi_tiet:
@@ -685,7 +692,7 @@ def chi_tiet_phieu_nhap_api(request, phieu_id):
             'so_luong': ct.so_luong
         })
         
-    return JsonResponse({'status': 'success', 'data': data})
+    return JsonResponse({'status': 'success', 'ten_khoa': ten_khoa, 'data': data})
 
 def xoa_phieu_nhap_view(request, id):
     if not request.session.get('is_login'): return redirect('dang_nhap')
@@ -714,8 +721,8 @@ def sua_phieu_nhap_view(request, id):
         return redirect('danh_sach_phieu_nhap')
 
     danh_sach_tat_ca_vt = VatTu.objects.all().order_by('ten_vat_tu')
-    
-    # Đóng gói dữ liệu lưới cũ thành JSON để ném ra Giao diện Javascript
+    khoa_phongs = KhoaPhong.objects.all().order_by('ten_khoa_phong') # Thêm dòng này
+
     chi_tiet_cu = ChiTietPhieuNhap.objects.filter(phieu_nhap=phieu)
     ds_luoi = []
     for ct in chi_tiet_cu:
@@ -728,6 +735,7 @@ def sua_phieu_nhap_view(request, id):
     return render(request, 'sua_phieunhap.html', {
         'phieu': phieu,
         'danh_sach_tat_ca_vt': danh_sach_tat_ca_vt,
+        'khoa_phongs': khoa_phongs, # Thêm biến này
         'chi_tiet_json': json.dumps(ds_luoi)
     })
 
@@ -736,40 +744,56 @@ def cap_nhat_phieu_nhap_api(request, id):
     if not request.session.get('is_login'): return JsonResponse({'status': 'error'})
     if request.method == 'POST':
         try:
-            phieu = PhieuNhapKho.objects.get(id=id)
-            data = json.loads(request.body)
-            ngay_phieu = data.get('ngay_phieu')
-            items = data.get('items', [])
+            with transaction.atomic():
+                phieu = PhieuNhapKho.objects.get(id=id)
+                khoa_cu_id = phieu.khoa_phong_id # Ghi nhớ khoa cũ để trừ tồn kho
 
-            if not ngay_phieu or len(items) == 0:
-                return JsonResponse({'status': 'error', 'msg': 'Thiếu dữ liệu!'})
+                data = json.loads(request.body)
+                ngay_phieu = data.get('ngay_phieu')
+                khoa_moi_id = data.get('khoa_phong_id') # Nhận khoa phòng mới từ giao diện
+                items = data.get('items', [])
 
-            # BƯỚC A: TRỪ ĐI SỐ LƯỢNG CŨ TRONG KHO (Hoàn tác phiếu cũ)
-            chi_tiet_cu = ChiTietPhieuNhap.objects.filter(phieu_nhap=phieu)
-            for ct in chi_tiet_cu:
-                vt = ct.vat_tu
-                vt.so_luong -= ct.so_luong
-                if vt.so_luong < 0: vt.so_luong = 0
-                vt.save()
-            chi_tiet_cu.delete() # Dọn sạch chi tiết cũ
+                if not ngay_phieu or not khoa_moi_id or len(items) == 0:
+                    return JsonResponse({'status': 'error', 'msg': 'Thiếu ngày phiếu, khoa phòng hoặc danh sách vật tư!'})
 
-            # BƯỚC B: Cập nhật thông tin phiếu
-            phieu.ngay_phieu = ngay_phieu
-            phieu.save()
+                # BƯỚC A: HOÀN TÁC TRỪ SỐ LƯỢNG CŨ KHỎI KHO CỦA KHOA CŨ
+                chi_tiet_cu = ChiTietPhieuNhap.objects.filter(phieu_nhap=phieu)
+                for ct in chi_tiet_cu:
+                    if khoa_cu_id:
+                        try:
+                            ton_kho_cu = TonKhoKhoaPhong.objects.get(khoa_phong_id=khoa_cu_id, vat_tu=ct.vat_tu)
+                            ton_kho_cu.so_luong -= ct.so_luong
+                            if ton_kho_cu.so_luong < 0: ton_kho_cu.so_luong = 0
+                            ton_kho_cu.save()
+                        except TonKhoKhoaPhong.DoesNotExist:
+                            pass
+                chi_tiet_cu.delete() # Xóa chi tiết cũ
 
-            # BƯỚC C: Lưu Chi tiết mới & Cộng lại số lượng vào tồn kho
-            for item in items:
-                vt = VatTu.objects.get(id=item['vt_id'])
-                sl = int(item['so_luong'])
-                ChiTietPhieuNhap.objects.create(phieu_nhap=phieu, vat_tu=vt, so_luong=sl)
-                vt.so_luong += sl
-                vt.save()
+                # BƯỚC B: Cập nhật thông tin Header của phiếu sang Khoa phòng mới
+                phieu.ngay_phieu = ngay_phieu
+                phieu.khoa_phong_id = khoa_moi_id
+                phieu.save()
 
-            return JsonResponse({'status': 'success', 'msg': 'Cập nhật phiếu thành công!'})
+                # BƯỚC C: Lưu Chi tiết mới & Cộng số lượng vào tồn kho của KHOA PHÒNG MỚI
+                for item in items:
+                    vt = VatTu.objects.get(id=item['vt_id'])
+                    sl = int(item['so_luong'])
+                    
+                    # Tạo chi tiết mới
+                    ChiTietPhieuNhap.objects.create(phieu_nhap=phieu, vat_tu=vt, so_luong=sl)
+                    
+                    # Cộng dồn tồn kho vào khoa phòng mới được chọn
+                    ton_kho_moi, created = TonKhoKhoaPhong.objects.get_or_create(
+                        khoa_phong_id=khoa_moi_id,
+                        vat_tu=vt,
+                        defaults={'so_luong': 0}
+                    )
+                    ton_kho_moi.so_luong += sl
+                    ton_kho_moi.save()
+
+                return JsonResponse({'status': 'success', 'msg': 'Cập nhật phiếu nhập kho và điều chỉnh tồn kho thành công!'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'msg': str(e)})
-
-# --- HÀM API LƯU PHIẾU XUẤT KHO ---
 # --- HÀM API LƯU PHIẾU XUẤT KHO (CÓ XUẤT CHO KHOA KHÁC & CHECK TIÊU HAO) ---
 def luu_phieu_xuat_kho_api(request):
     if not request.session.get('is_login'): return JsonResponse({'status': 'error', 'msg': 'Chưa đăng nhập'})
@@ -872,9 +896,24 @@ def danh_sach_phieu_xuat_view(request):
 # 2. HÀM API TRẢ VỀ CHI TIẾT KHI NHÁY ĐÚP CHUỘT
 def chi_tiet_phieu_xuat_api(request, phieu_id):
     if not request.session.get('is_login'): return JsonResponse({'status': 'error'})
+    
+    try:
+        phieu = PhieuXuatKho.objects.select_related('khoa_phong', 'khoa_nhan').get(id=phieu_id)
+        ten_khoa_xuat = phieu.khoa_phong.ten_khoa_phong if phieu.khoa_phong else "Chưa phân bổ"
+        ten_khoa_nhan = phieu.khoa_nhan.ten_khoa_phong if phieu.khoa_nhan else "Chưa phân bổ"
+    except Exception:
+        ten_khoa_xuat = "---"
+        ten_khoa_nhan = "---"
+
     chi_tiet = ChiTietPhieuXuat.objects.filter(phieu_xuat_id=phieu_id).select_related('vat_tu')
     data = [{'ma_vt': ct.vat_tu.ma_vat_tu or '---', 'ten_vt': ct.vat_tu.ten_vat_tu, 'so_luong': ct.so_luong} for ct in chi_tiet]
-    return JsonResponse({'status': 'success', 'data': data})
+    
+    return JsonResponse({
+        'status': 'success', 
+        'ten_khoa_xuat': ten_khoa_xuat, 
+        'ten_khoa_nhan': ten_khoa_nhan, 
+        'data': data
+    })
 
 # 3. HÀM XÓA PHIẾU XUẤT (HOÀN TRẢ KHO)
 def xoa_phieu_xuat_view(request, id):
@@ -901,12 +940,15 @@ def sua_phieu_xuat_view(request, id):
         return redirect('danh_sach_phieu_xuat')
 
     danh_sach_tat_ca_vt = VatTu.objects.all().order_by('ten_vat_tu')
+    khoa_phongs = KhoaPhong.objects.all().order_by('ten_khoa_phong') # Thêm dòng này
+
     chi_tiet_cu = ChiTietPhieuXuat.objects.filter(phieu_xuat=phieu)
     ds_luoi = [{'vt_id': str(ct.vat_tu.id), 'ten_vt': ct.vat_tu.ten_vat_tu, 'so_luong': ct.so_luong} for ct in chi_tiet_cu]
 
     return render(request, 'sua_phieuxuat.html', {
         'phieu': phieu,
         'danh_sach_tat_ca_vt': danh_sach_tat_ca_vt,
+        'khoa_phongs': khoa_phongs, # Truyền biến này ra giao diện
         'chi_tiet_json': json.dumps(ds_luoi)
     })
 
@@ -915,47 +957,73 @@ def cap_nhat_phieu_xuat_api(request, id):
     if not request.session.get('is_login'): return JsonResponse({'status': 'error'})
     if request.method == 'POST':
         try:
-            # Dùng transaction.atomic để đảm bảo nếu quá trình lỗi thì kho không bị trừ/cộng sai
             with transaction.atomic():
                 phieu = PhieuXuatKho.objects.get(id=id)
+                old_khoa_xuat_id = phieu.khoa_phong_id
+                old_khoa_nhan_id = phieu.khoa_nhan_id
+
                 data = json.loads(request.body)
                 ngay_phieu = data.get('ngay_phieu')
+                new_khoa_xuat_id = data.get('khoa_xuat_id')
+                new_khoa_nhan_id = data.get('khoa_nhan_id')
                 items = data.get('items', [])
 
-                if not ngay_phieu or len(items) == 0:
-                    return JsonResponse({'status': 'error', 'msg': 'Thiếu dữ liệu!'})
+                if not ngay_phieu or not new_khoa_xuat_id or not new_khoa_nhan_id or len(items) == 0:
+                    return JsonResponse({'status': 'error', 'msg': 'Thiếu ngày phiếu, khoa phòng hoặc vật tư!'})
+                if new_khoa_xuat_id == new_khoa_nhan_id:
+                    return JsonResponse({'status': 'error', 'msg': 'Khoa xuất và Khoa nhận không được trùng nhau!'})
 
-                # BƯỚC A: HOÀN TRẢ SỐ LƯỢNG CŨ VÀO KHO
-                chi_tiet_cu = ChiTietPhieuXuat.objects.filter(phieu_xuat=phieu)
+                # BƯỚC A: HOÀN TRẢ SỐ LƯỢNG CŨ VÀO KHO (Cộng trả lại khoa xuất cũ, trừ bớt khoa nhận cũ)
+                chi_tiet_cu = ChiTietPhieuXuat.objects.filter(phieu_xuat=phieu).select_related('vat_tu')
                 for ct in chi_tiet_cu:
-                    vt = ct.vat_tu
-                    vt.so_luong += ct.so_luong
-                    vt.save()
+                    if old_khoa_xuat_id:
+                        ton_xuat_cu, _ = TonKhoKhoaPhong.objects.get_or_create(khoa_phong_id=old_khoa_xuat_id, vat_tu=ct.vat_tu, defaults={'so_luong': 0})
+                        ton_xuat_cu.so_luong += ct.so_luong
+                        ton_xuat_cu.save()
+                    if old_khoa_nhan_id and not ct.vat_tu.is_tieu_hao:
+                        try:
+                            ton_nhan_cu = TonKhoKhoaPhong.objects.get(khoa_phong_id=old_khoa_nhan_id, vat_tu=ct.vat_tu)
+                            ton_nhan_cu.so_luong -= ct.so_luong
+                            if ton_nhan_cu.so_luong < 0: ton_nhan_cu.so_luong = 0
+                            ton_nhan_cu.save()
+                        except TonKhoKhoaPhong.DoesNotExist: pass
                 chi_tiet_cu.delete()
 
-                # BƯỚC B: KIỂM TRA ĐỦ TỒN KHO CHO ĐƠN MỚI KHÔNG
+                # BƯỚC B: KIỂM TRA ĐỦ TỒN KHO TẠI KHOA XUẤT MỚI
                 for item in items:
                     vt = VatTu.objects.get(id=item['vt_id'])
-                    if vt.so_luong < int(item['so_luong']):
-                        # Nếu thiếu, hệ thống tự động rollback (hủy thao tác ở BƯỚC A)
-                        raise Exception(f"Vật tư [{vt.ten_vat_tu}] chỉ còn {vt.so_luong}, không đủ xuất!")
+                    try:
+                        ton_kho_moi = TonKhoKhoaPhong.objects.get(khoa_phong_id=new_khoa_xuat_id, vat_tu=vt)
+                        if ton_kho_moi.so_luong < int(item['so_luong']):
+                            raise Exception(f"Vật tư [{vt.ten_vat_tu}] tại khoa xuất mới chỉ còn {ton_kho_moi.so_luong}, không đủ xuất!")
+                    except TonKhoKhoaPhong.DoesNotExist:
+                        raise Exception(f"Vật tư [{vt.ten_vat_tu}] không có trong kho của khoa xuất mới!")
 
-                # BƯỚC C: TIẾN HÀNH LƯU VÀ TRỪ KHO MỚI
+                # BƯỚC C: TIẾN HÀNH LƯU VÀ ĐIỀU CHỈNH KHO MỚI
                 phieu.ngay_phieu = ngay_phieu
+                phieu.khoa_phong_id = new_khoa_xuat_id
+                phieu.khoa_nhan_id = new_khoa_nhan_id
                 phieu.save()
 
                 for item in items:
                     vt = VatTu.objects.get(id=item['vt_id'])
                     sl = int(item['so_luong'])
                     ChiTietPhieuXuat.objects.create(phieu_xuat=phieu, vat_tu=vt, so_luong=sl)
-                    vt.so_luong -= sl
-                    vt.save()
+                    
+                    # Trừ kho khoa xuất mới
+                    ton_xuat_moi = TonKhoKhoaPhong.objects.get(khoa_phong_id=new_khoa_xuat_id, vat_tu=vt)
+                    ton_xuat_moi.so_luong -= sl
+                    ton_xuat_moi.save()
 
-            return JsonResponse({'status': 'success', 'msg': 'Cập nhật phiếu xuất thành công!'})
+                    # Cộng kho khoa nhận mới (Nếu không phải tiêu hao)
+                    if not vt.is_tieu_hao:
+                        ton_nhan_moi, _ = TonKhoKhoaPhong.objects.get_or_create(khoa_phong_id=new_khoa_nhan_id, vat_tu=vt, defaults={'so_luong': 0})
+                        ton_nhan_moi.so_luong += sl
+                        ton_nhan_moi.save()
+
+                return JsonResponse({'status': 'success', 'msg': 'Cập nhật phiếu xuất kho và điều chỉnh tồn kho thành công!'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'msg': str(e)})
-
-# ================= BÁO CÁO TỔNG HỢP XUẤT - NHẬP - TỒN =================
 # ================= BÁO CÁO TỔNG HỢP XUẤT - NHẬP - TỒN (ĐÃ FIX TỒN ĐẦU) =================
 def bao_cao_nhap_xuat_view(request):
     if not request.session.get('is_login'): return redirect('dang_nhap')

@@ -26,17 +26,28 @@
                 <label class="block text-sm font-bold text-gray-700 mb-2">Ngày xuất phiếu *</label>
                 <input type="text" id="xk_ngay_phieu" placeholder="dd/mm/yyyy" class="w-full border rounded-lg px-3 py-2 focus:ring-red-500 bg-white">
             </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Khoa Xuất (Bị trừ) *</label>
+                <select id="xk_khoa_xuat" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if phieu.khoa_phong_id == kp.id %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Khoa Nhận (Được cộng) *</label>
+                <select id="xk_khoa_nhan" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none bg-white">
+                    {% for kp in khoa_phongs %}
+                        <option value="{{ kp.id }}" {% if phieu.khoa_nhan_id == kp.id %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
+                    {% endfor %}
+                </select>
         </div>
 
         <div class="flex gap-4 items-end mb-4 border-b pb-4">
             <div class="flex-1">
                 <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Chọn Vật Tư Cần Xuất</label>
                 <select id="xk_chon_vat_tu" class="w-full text-sm">
-                    <option value="">-- Tìm vật tư... --</option>
-                    {% for vt in danh_sach_tat_ca_vt %}
-                        <option value="{{ vt.id }}" data-ton="{{ vt.so_luong }}">{{ vt.ten_vat_tu }} (Tồn hiện tại: {{ vt.so_luong }})</option>
-                    {% endfor %}
-                </select>
+                    </select>
             </div>
             <div class="w-32">
                 <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Số lượng</label>
@@ -70,42 +81,85 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         veLaiLuoi();
+
         flatpickr("#xk_ngay_phieu", {
-            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true, defaultDate: "{{ phieu.ngay_phieu|date:'Y-m-d' }}",
+            dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn", allowInput: true,
+            defaultDate: "{{ phieu.ngay_phieu|date:'Y-m-d' }}",
             onReady: function(d, s, i) { new Cleave(i.altInput, { date: true, delimiter: '/', datePattern: ['d', 'm', 'Y'] }); }
         });
-        tsVatTu = new TomSelect("#xk_chon_vat_tu", { create: false, placeholder: "-- Tìm vật tư... --" });
+
+        // 1. KHỞI TẠO Ô CHỌN VẬT TƯ (Trống ban đầu, cấu hình lấy dữ liệu từ API)
+        tsVatTu = new TomSelect("#xk_chon_vat_tu", { 
+            create: false, 
+            valueField: 'id',
+            labelField: 'text',
+            searchField: 'text',
+            placeholder: "-- Vui lòng chọn Khoa Xuất trước --" 
+        });
+
+        // 2. HÀM GỌI API LẤY TỒN KHO CỦA KHOA XUẤT ĐƯỢC CHỌN
+        function loadVatTuTheoKhoa(khoa_id) {
+            tsVatTu.clearOptions();
+            tsVatTu.clear();
+            if(!khoa_id) return;
+            
+            fetch(`/api/ton-kho-khoa/${khoa_id}/`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        data.data.forEach(item => {
+                            tsVatTu.addOption({
+                                id: item.id,
+                                text: `${item.ten_vat_tu} (Tồn: ${item.so_luong})`,
+                                ten_vt_goc: item.ten_vat_tu // Lưu tên gốc để hiển thị vào lưới
+                            });
+                        });
+                        tsVatTu.refreshOptions(false);
+                    }
+                });
+        }
+
+        // 3. Khởi tạo Khoa Nhận
+        tsKhoaNhan = new TomSelect("#xk_khoa_nhan", { create: false, placeholder: "-- Chọn khoa nhận --" });
+
+        // 4. Khởi tạo Khoa Xuất -> BẮT SỰ KIỆN KHI THAY ĐỔI KHOA SẼ LOAD LẠI VẬT TƯ
+        tsKhoaXuat = new TomSelect("#xk_khoa_xuat", { 
+            create: false, 
+            placeholder: "-- Chọn khoa xuất --",
+            onChange: function(value) {
+                loadVatTuTheoKhoa(value);
+            }
+        });
+
+        // 5. Nạp danh sách vật tư ngay khi vừa vào trang (Dựa theo khoa xuất cũ của phiếu)
+        let initialKhoaXuat = document.getElementById('xk_khoa_xuat').value;
+        if(initialKhoaXuat) {
+            loadVatTuTheoKhoa(initialKhoaXuat);
+        }
     });
+
+    // CẬP NHẬT LẠI HÀM THÊM VÀO LƯỚI
+    
 
     function xuLyEnter(e) { if (e.key === 'Enter') { e.preventDefault(); themVaoLuoi(); } }
 
     function themVaoLuoi() {
         let vt_id = tsVatTu.getValue();
-        let so_luong = parseInt(document.getElementById('xk_so_luong').value);
+        let so_luong = document.getElementById('xk_so_luong').value;
 
-        if (!vt_id || !so_luong || so_luong <= 0) { alert("Vui lòng chọn vật tư và nhập số lượng!"); return; }
+        if (!vt_id || !so_luong || so_luong <= 0) { alert("Vui lòng chọn vật tư và nhập số lượng hợp lệ!"); return; }
 
-        let optionGoc = document.querySelector('#xk_chon_vat_tu option[value="' + vt_id + '"]');
-        let ton_kho_hien_tai = parseInt(optionGoc.getAttribute('data-ton'));
-        
-        // Tính toán tồn kho thực tế (đã cộng lại số lượng của chính món này trong phiếu cũ nếu có)
-        let item_cu = danhSachLuoiGoc.find(i => i.vt_id === vt_id);
-        let sl_cu_da_xuat = item_cu ? item_cu.so_luong : 0;
-        let ton_kho_toi_da_co_the_xuat = ton_kho_hien_tai + sl_cu_da_xuat;
+        // Lấy tên vật tư gốc được lưu trong object của TomSelect (Bỏ qua chữ "Tồn: xx")
+        let option_data = tsVatTu.options[vt_id];
+        let ten_vt = option_data.ten_vt_goc;
 
         let tonTai = danhSachLuoi.find(item => item.vt_id === vt_id);
-        let tong_muon_xuat = tonTai ? (tonTai.so_luong + so_luong) : so_luong;
+        
+        if (tonTai) { tonTai.so_luong = parseInt(tonTai.so_luong) + parseInt(so_luong); } 
+        else { danhSachLuoi.push({ vt_id: vt_id, ten_vt: ten_vt, so_luong: parseInt(so_luong) }); }
 
-        if (tong_muon_xuat > ton_kho_toi_da_co_the_xuat) {
-            alert(`Lỗi: Kể cả số lượng đã xuất cũ, kho của bạn chỉ đáp ứng tối đa ${ton_kho_toi_da_co_the_xuat} món!`);
-            return;
-        }
-
-        let ten_vt = tsVatTu.options[vt_id].text.split(' (Tồn')[0];
-        if (tonTai) { tonTai.so_luong += so_luong; } 
-        else { danhSachLuoi.push({ vt_id: vt_id, ten_vt: ten_vt, so_luong: so_luong }); }
-
-        document.getElementById('xk_so_luong').value = ''; tsVatTu.clear(); tsVatTu.focus();
+        document.getElementById('xk_so_luong').value = '';
+        tsVatTu.clear(); tsVatTu.focus();
         veLaiLuoi();
     }
 
@@ -130,19 +184,37 @@
 
     function capNhatPhieu() {
         let ngay_phieu = document.getElementById('xk_ngay_phieu').value;
+        let khoa_xuat_id = document.getElementById('xk_khoa_xuat').value;
+        let khoa_nhan_id = document.getElementById('xk_khoa_nhan').value;
         let csrfToken = document.getElementById('csrf_token').value;
 
         if (!ngay_phieu) { alert('Thiếu ngày phiếu!'); return; }
-        if (danhSachLuoi.length === 0) { alert('Lưới vật tư đang trống!'); return; }
+        if (!khoa_xuat_id || !khoa_nhan_id) { alert('Vui lòng chọn đầy đủ Khoa Xuất và Khoa Nhận!'); return; }
+        if (khoa_xuat_id === khoa_nhan_id) { alert('Khoa xuất và Khoa nhận không được trùng nhau!'); return; }
+        if (danhSachLuoi.length === 0) { alert('Lưới vật tư xuất đang trống!'); return; }
 
         fetch('/api/cap-nhat-phieu-xuat/{{ phieu.id }}/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ ngay_phieu: ngay_phieu, items: danhSachLuoi })
-        }).then(res => res.json()).then(data => {
+            body: JSON.stringify({ 
+                ngay_phieu: ngay_phieu, 
+                khoa_xuat_id: khoa_xuat_id,
+                khoa_nhan_id: khoa_nhan_id,
+                items: danhSachLuoi 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
             if (data.status === 'success') {
-                alert(data.msg); window.location.href = "{% url 'danh_sach_phieu_xuat' %}";
-            } else { alert("Lỗi: " + data.msg); }
+                alert(data.msg);
+                window.location.href = "{% url 'danh_sach_phieu_xuat' %}";
+            } else { 
+                alert("Lỗi: " + data.msg); 
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Có lỗi kết nối máy chủ khi lưu phiếu!");
         });
     }
 </script>

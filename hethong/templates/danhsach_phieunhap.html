@@ -96,7 +96,7 @@
         
         <div class="mb-5 pb-4 border-b">
             <h3 class="text-2xl font-bold text-gray-800"><i class="fas fa-box-open text-indigo-500 mr-2"></i> Chi Tiết Phiếu Nhập</h3>
-            <p class="text-gray-600 mt-2 font-medium">Mã phiếu: <span id="lbl_ma_phieu" class="text-indigo-600 font-bold ml-1"></span> <span class="mx-3">|</span> Ngày nhập: <span id="lbl_ngay_phieu" class="text-gray-800 font-bold ml-1"></span></p>
+            <p class="text-gray-600 mt-2 font-medium">Mã phiếu: <span id="lbl_ma_phieu" class="text-indigo-600 font-bold ml-1"></span> <span class="mx-3">|</span> Ngày nhập: <span id="lbl_ngay_phieu" class="text-gray-800 font-bold ml-1"></span> <span class="mx-3">|</span> Khoa nhập: <span id="lbl_khoa_nhap" class="text-teal-600 font-bold ml-1"></span></p>
         </div>
 
         <div class="overflow-x-auto max-h-[400px] border rounded-lg">
@@ -148,6 +148,7 @@
         fetch(`/api/chi-tiet-phieu-nhap/${phieuId}/`)
             .then(res => res.json())
             .then(data => {
+                document.getElementById('lbl_khoa_nhap').innerText = data.ten_khoa;
                 let html = '';
                 if (data.data.length === 0) {
                     html = '<tr><td colspan="4" class="px-4 py-6 text-center text-red-500">Phiếu này không có vật tư nào!</td></tr>';
