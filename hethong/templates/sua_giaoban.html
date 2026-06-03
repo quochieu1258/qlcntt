@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Cập Nhật Giao Ban CNTT{% endblock %}
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
@@ -37,10 +39,10 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-2">Nhân viên thực hiện <span class="text-red-500">*</span></label>
-                <select name="nhan_vien" required class="w-full border rounded-lg px-4 py-2 bg-white">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Nhân viên phối hợp <span class="text-red-500">*</span></label>
+                <select id="sua_nv" name="nhan_vien" multiple required class="w-full text-sm" placeholder="-- Chọn các nhân viên --">
                     {% for nv in nhan_viens %}
-                        <option value="{{ nv.id }}" {% if gb.nhan_vien_id == nv.id %}selected{% endif %}>{{ nv.ten_nhan_vien }}</option>
+                        <option value="{{ nv.id }}" {% if nv.id in selected_nvs %}selected{% endif %}>{{ nv.ten_nhan_vien }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -72,5 +74,10 @@
 
 <script>
     flatpickr("#ngay_giao_ban", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "vn" });
+    // Kích hoạt giao diện đa chọn nhân viên
+    new TomSelect("#sua_nv", {
+        create: false,
+        plugins: ['remove_button']
+    });
 </script>
 {% endblock %}

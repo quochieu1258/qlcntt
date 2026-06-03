@@ -1484,15 +1484,16 @@ def giao_ban_cntt_view(request):
     den_ngay = request.GET.get('den_ngay', '')
     kp_id = request.GET.get('khoa_phong', '')
     nv_id = request.GET.get('nhan_vien', '')
-    trang_thai = request.GET.get('trang_thai', '') # Thêm lấy trạng thái
+    trang_thai = request.GET.get('trang_thai', '') 
 
-    danh_sach = GiaoBanCNTT.objects.select_related('khoa_phong', 'nhan_vien').all().order_by('-ngay_giao_ban', '-id')
+    # Dùng prefetch_related cho ManyToManyField
+    danh_sach = GiaoBanCNTT.objects.select_related('khoa_phong').prefetch_related('nhan_vien').all().order_by('-ngay_giao_ban', '-id')
 
     if tu_ngay: danh_sach = danh_sach.filter(ngay_giao_ban__gte=tu_ngay)
     if den_ngay: danh_sach = danh_sach.filter(ngay_giao_ban__lte=den_ngay)
     if kp_id: danh_sach = danh_sach.filter(khoa_phong_id=kp_id)
-    if nv_id: danh_sach = danh_sach.filter(nhan_vien_id=nv_id)
-    if trang_thai: danh_sach = danh_sach.filter(trang_thai=trang_thai) # Thêm lọc trạng thái
+    if nv_id: danh_sach = danh_sach.filter(nhan_vien__id=nv_id) # Thay đổi cách lọc nhân viên
+    if trang_thai: danh_sach = danh_sach.filter(trang_thai=trang_thai) 
 
     khoa_phongs = KhoaPhong.objects.all().order_by('ten_khoa_phong')
     nhan_viens = NhanVien.objects.all().order_by('ten_nhan_vien')
@@ -1505,7 +1506,7 @@ def giao_ban_cntt_view(request):
         'den_ngay': den_ngay,
         'kp_value': kp_id,
         'nv_value': nv_id,
-        'trang_thai_value': trang_thai, # Trả về UI để giữ lựa chọn
+        'trang_thai_value': trang_thai, 
         'tong_so': danh_sach.count()
     })
 
@@ -1513,15 +1514,20 @@ def luu_giao_ban_view(request):
     if not request.session.get('is_login'): return redirect('dang_nhap')
     
     if request.method == 'POST':
-        GiaoBanCNTT.objects.create(
+        gb = GiaoBanCNTT.objects.create(
             ngay_giao_ban=request.POST.get('ngay_giao_ban'),
             khoa_phong_id=request.POST.get('khoa_phong'),
-            nhan_vien_id=request.POST.get('nhan_vien'),
             tinh_trang_tiep_nhan=request.POST.get('tinh_trang_tiep_nhan'),
             cach_xu_ly=request.POST.get('cach_xu_ly'),
             trang_thai=request.POST.get('trang_thai'),
             ghi_chu=request.POST.get('ghi_chu')
         )
+        
+        # Nhận mảng các ID nhân viên và gán vào phiếu
+        nv_ids = request.POST.getlist('nhan_vien')
+        if nv_ids:
+            gb.nhan_vien.set(nv_ids)
+
     return redirect('giao_ban_cntt')
 
 def xoa_giao_ban_view(request, id):
@@ -1539,21 +1545,29 @@ def sua_giao_ban_view(request, id):
     if request.method == "POST":
         gb.ngay_giao_ban = request.POST.get('ngay_giao_ban')
         gb.khoa_phong_id = request.POST.get('khoa_phong')
-        gb.nhan_vien_id = request.POST.get('nhan_vien')
         gb.tinh_trang_tiep_nhan = request.POST.get('tinh_trang_tiep_nhan')
         gb.cach_xu_ly = request.POST.get('cach_xu_ly')
         gb.trang_thai = request.POST.get('trang_thai')
         gb.ghi_chu = request.POST.get('ghi_chu')
         gb.save()
+        
+        # Cập nhật lại danh sách nhân viên
+        nv_ids = request.POST.getlist('nhan_vien')
+        gb.nhan_vien.set(nv_ids)
+        
         return redirect('giao_ban_cntt')
 
     khoa_phongs = KhoaPhong.objects.all().order_by('ten_khoa_phong')
     nhan_viens = NhanVien.objects.all().order_by('ten_nhan_vien')
+    
+    # Lấy danh sách ID các nhân viên đã chọn để load lên form sửa
+    selected_nvs = list(gb.nhan_vien.values_list('id', flat=True))
 
     return render(request, 'sua_giaoban.html', {
         'gb': gb,
         'khoa_phongs': khoa_phongs,
-        'nhan_viens': nhan_viens
+        'nhan_viens': nhan_viens,
+        'selected_nvs': selected_nvs
     })
 
 # ================= KHU VỰC TỒN KHO KHOA PHÒNG =================

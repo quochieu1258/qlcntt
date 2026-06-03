@@ -141,7 +141,8 @@ TRANG_THAI_GIAO_BAN = [
 class GiaoBanCNTT(models.Model):
     ngay_giao_ban = models.DateField()
     khoa_phong = models.ForeignKey(KhoaPhong, on_delete=models.CASCADE)
-    nhan_vien = models.ForeignKey(NhanVien, on_delete=models.CASCADE)
+    #nhan_vien = models.ForeignKey(NhanVien, on_delete=models.CASCADE)
+    nhan_vien = models.ManyToManyField(NhanVien)
     tinh_trang_tiep_nhan = models.TextField()
     cach_xu_ly = models.TextField()
     trang_thai = models.CharField(max_length=50, choices=TRANG_THAI_GIAO_BAN)

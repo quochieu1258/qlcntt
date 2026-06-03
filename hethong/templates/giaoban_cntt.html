@@ -90,7 +90,12 @@
                     
                     <td class="px-4 py-5 align-top">
                         <span class="font-bold text-blue-700 block text-[13px] uppercase mb-1">{{ item.khoa_phong.ten_khoa_phong }}</span>
-                        <span class="text-xs text-gray-600 font-medium inline-flex items-center bg-gray-100 px-2 py-1 rounded-md border border-gray-200"><i class="fas fa-user-circle text-gray-400 mr-1.5"></i> {{ item.nhan_vien.ten_nhan_vien }}</span>
+                        <span class="text-xs text-gray-600 font-medium inline-flex items-center bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                            <i class="fas fa-users text-blue-500 mr-1.5"></i> 
+                            {% for nv in item.nhan_vien.all %}
+                                {{ nv.ten_nhan_vien }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
                     </td>
                     
                     <td class="px-4 py-5 align-top">
@@ -167,7 +172,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Nhân viên thực hiện <span class="text-red-500">*</span></label>
-                    <select id="form_nv" name="nhan_vien" required class="w-full text-sm"><option value="">-- Chọn nhân viên --</option>{% for nv in nhan_viens %}<option value="{{ nv.id }}">{{ nv.ten_nhan_vien }}</option>{% endfor %}</select>
+                    <select id="form_nv" name="nhan_vien" multiple required class="w-full text-sm" placeholder="-- Nhấn để chọn nhiều nhân viên --">
+                        {% for nv in nhan_viens %}
+                            <option value="{{ nv.id }}">{{ nv.ten_nhan_vien }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
 
@@ -204,7 +213,10 @@
         new TomSelect("#loc_khoa_phong", { create: false });
         new TomSelect("#loc_nhan_vien", { create: false });
         new TomSelect("#form_kp", { create: false });
-        new TomSelect("#form_nv", { create: false });
+        new TomSelect("#form_nv", { 
+            create: false,
+            plugins: ['remove_button'] 
+        });
     });
 </script>
 {% endblock %}
