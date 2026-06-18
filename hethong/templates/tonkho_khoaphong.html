@@ -3,6 +3,9 @@
 {% block title %}Tồn Kho Khoa Phòng{% endblock %}
 
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
 <div class="container mx-auto mt-4 relative">
     <div class="mb-6">
         <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-warehouse text-amber-500 mr-2"></i> Quản Lý Tồn Kho Theo Khoa/Phòng</h2>
@@ -12,7 +15,7 @@
     <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex gap-4 items-end">
         <div class="flex-1">
             <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Chọn Khoa / Phòng cần xem tồn kho</label>
-            <select name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <select id="chon_khoa_phong_ton_kho" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                 <option value="">-- Vui lòng chọn Khoa / Phòng --</option>
                 {% for kp in khoa_phongs %}
                     <option value="{{ kp.id }}" {% if kp_value == kp.id|stringformat:"s" %}selected{% endif %}>{{ kp.ten_khoa_phong }}</option>
@@ -45,13 +48,14 @@
                     <th class="px-5 py-4 text-left w-16">STT</th>
                     <th class="px-5 py-4 text-left w-48">Mã Vật Tư</th>
                     <th class="px-5 py-4 text-left">Tên Vật Tư</th>
+                    <th class="px-5 py-4 text-left">Ghi Chú</th>
                     <th class="px-5 py-4 text-center w-32">Số Lượng</th>
                     <th class="px-5 py-4 text-center w-[280px]">Thao tác</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 {% if not kp_value %}
-                    <tr><td colspan="5" class="px-5 py-10 text-center text-gray-400 italic">Vui lòng chọn Khoa / Phòng ở bên trên để xem dữ liệu.</td></tr>
+                    <tr><td colspan="6" class="px-5 py-10 text-center text-gray-400 italic">Vui lòng chọn Khoa / Phòng ở bên trên để xem dữ liệu.</td></tr>
                 {% else %}
                     {% for ton in danh_sach_ton %}
                         
@@ -60,6 +64,13 @@
                             <td class="px-5 py-4 whitespace-no-wrap text-center font-medium">{{ forloop.counter }}</td>
                             <td class="px-5 py-4 whitespace-no-wrap font-mono text-gray-600">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>
                             <td class="px-5 py-4 font-bold text-teal-700">{{ ton.vat_tu.ten_vat_tu }}</td>
+                            <td class="px-5 py-4 text-sm text-gray-600 max-w-xs">
+                                {% if ton.vat_tu.ghi_chu %}
+                                    {{ ton.vat_tu.ghi_chu|linebreaksbr }}
+                                {% else %}
+                                    <span class="italic text-gray-400">Chưa cập nhật</span>
+                                {% endif %}
+                            </td>
                             <td class="px-5 py-4 whitespace-no-wrap text-center">
                                 <span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-sm font-bold border border-green-200">{{ ton.so_luong }}</span>
                             </td>
@@ -79,6 +90,13 @@
                             <td class="px-5 py-3 whitespace-no-wrap text-center"></td>
                             <td class="px-5 py-3 whitespace-no-wrap font-mono">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>
                             <td class="px-5 py-3 font-semibold">{{ ton.vat_tu.ten_vat_tu }} <span class="text-xs text-red-500 italic font-normal ml-1">(Hàng Hỏng)</span></td>
+                            <td class="px-5 py-3 text-sm max-w-xs">
+                                {% if ton.vat_tu.ghi_chu %}
+                                    {{ ton.vat_tu.ghi_chu|linebreaksbr }}
+                                {% else %}
+                                    <span class="italic text-gray-400">Chưa cập nhật</span>
+                                {% endif %}
+                            </td>
                             <td class="px-5 py-3 whitespace-no-wrap text-center">
                                 <span class="bg-gray-300 text-gray-800 py-1 px-3 rounded-full text-sm font-bold">{{ ton.so_luong_hong }}</span>
                             </td>
@@ -95,7 +113,7 @@
 
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-5 py-10 text-center text-gray-500">
+                        <td colspan="6" class="px-5 py-10 text-center text-gray-500">
                             <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
                             <p>Khoa/Phòng này hiện chưa có vật tư nào khớp với bộ lọc.</p>
                         </td>
@@ -204,6 +222,14 @@
 
 <script>
     // --- KHU VỰC JAVASCRIPT ---
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect("#chon_khoa_phong_ton_kho", {
+            create: false,
+            placeholder: "-- Gõ tên Khoa / Phòng để tìm --",
+            plugins: ['dropdown_input'],
+            sortField: 'text'
+        });
+    });
 
     // 1. CHỨC NĂNG BÁO HỎNG
     function moPopupBaoHong(vt_id, ten_vt, ton_kho, khoa_id) {

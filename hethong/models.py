@@ -72,6 +72,8 @@ class VatTu(models.Model):
     noi_de_vat_tu = models.CharField(max_length=255, blank=True, null=True)
     is_tieu_hao = models.BooleanField(default=False) # Mặc định là không đánh dấu
 
+    ghi_chu = models.TextField(blank=True, null=True)
+
     class Meta:
         db_table = 'vat_tu'
 

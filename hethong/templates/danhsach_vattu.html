@@ -69,6 +69,7 @@
                         <th class="px-5 py-4 text-left">Tên Vật Tư</th>
                         <th class="px-5 py-4 text-center w-24">Tiêu Hao</th>
                         <th class="px-5 py-4 text-left">Nơi Để</th>
+                        <th class="px-5 py-4 text-left">Ghi Chú</th>
                         <th class="px-5 py-4 text-center w-32">Hạn Sử Dụng</th>
                         <th class="px-5 py-4 text-center w-24">Thao tác</th>
                     </tr>
@@ -87,6 +88,14 @@
                         <td class="px-5 py-4 whitespace-no-wrap text-sm text-gray-600">
                             {{ vt.noi_de_vat_tu|default:"<span class='italic text-gray-400'>Chưa cập nhật</span>"|safe }}
                         </td>
+
+                        <td class="px-5 py-4 text-sm text-gray-600 max-w-xs">
+                            {% if vt.ghi_chu %}
+                                {{ vt.ghi_chu|linebreaksbr }}
+                            {% else %}
+                                <span class="italic text-gray-400">Chưa cập nhật</span>
+                            {% endif %}
+                        </td>
                         
                         <td class="px-5 py-4 whitespace-no-wrap text-center">{{ vt.han_su_dung|date:"d/m/Y"|default:"---" }}</td>
                         
@@ -104,7 +113,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-5 py-10 text-center text-gray-500">
+                        <td colspan="8" class="px-5 py-10 text-center text-gray-500">
                             <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
                             <p>Chưa có danh mục vật tư nào trong hệ thống.</p>
                         </td>

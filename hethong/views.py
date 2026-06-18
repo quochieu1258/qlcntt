@@ -494,6 +494,7 @@ def them_vat_tu_view(request):
         ma = request.POST.get('ma_vat_tu', '').strip()
         ten = request.POST.get('ten_vat_tu', '').strip()
         noi_de = request.POST.get('noi_de_vat_tu', '').strip()
+        ghi_chu = request.POST.get('ghi_chu', '').strip()
         han_sd = request.POST.get('han_su_dung', '') 
         
         # Nhận giá trị từ Checkbox (nếu có check thì nó trả về 'on')
@@ -508,7 +509,7 @@ def them_vat_tu_view(request):
                         break
 
             # TRUYỀN THÊM BIẾN is_tieu_hao VÀO ĐÂY
-            vt = VatTu(ten_vat_tu=ten, ma_vat_tu=ma, noi_de_vat_tu=noi_de, is_tieu_hao=is_tieu_hao)
+            vt = VatTu(ten_vat_tu=ten, ma_vat_tu=ma, noi_de_vat_tu=noi_de, ghi_chu=ghi_chu, is_tieu_hao=is_tieu_hao)
             if han_sd: vt.han_su_dung = han_sd
             
             vt.save()
@@ -570,6 +571,7 @@ def sua_vat_tu_view(request, id):
         ma = request.POST.get('ma_vat_tu', '').strip()
         ten = request.POST.get('ten_vat_tu', '').strip()
         noi_de = request.POST.get('noi_de_vat_tu', '').strip()
+        ghi_chu = request.POST.get('ghi_chu', '').strip()
         han_sd = request.POST.get('han_su_dung', '') 
         
         is_tieu_hao = request.POST.get('is_tieu_hao') == 'on'
@@ -585,6 +587,7 @@ def sua_vat_tu_view(request, id):
             vt.ma_vat_tu = ma
             vt.ten_vat_tu = ten
             vt.noi_de_vat_tu = noi_de
+            vt.ghi_chu = ghi_chu
             vt.han_su_dung = han_sd if han_sd else None
             
             # CẬP NHẬT LẠI TRẠNG THÁI TIÊU HAO VÀ LƯU
