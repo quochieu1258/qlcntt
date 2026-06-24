@@ -7,13 +7,16 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <div class="container mx-auto mt-4 relative">
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-warehouse text-amber-500 mr-2"></i> Quản Lý Tồn Kho Theo Khoa/Phòng</h2>
-        <p class="text-gray-500 text-sm mt-1">Xem số lượng vật tư hiện đang có tại các Khoa/Phòng</p>
+    <div class="mb-6 flex items-start gap-3">
+        <i class="fas fa-warehouse text-amber-500 text-2xl mt-1 w-7 text-center flex-none"></i>
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Quản Lý Tồn Kho Theo Khoa/Phòng</h2>
+            <p class="text-gray-500 text-sm mt-1">Xem số lượng vật tư hiện đang có tại các Khoa/Phòng</p>
+        </div>
     </div>
 
-    <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex gap-4 items-end">
-        <div class="flex-1">
+    <form method="GET" action="" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+        <div class="md:col-span-2 xl:col-span-6">
             <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Chọn Khoa / Phòng cần xem tồn kho</label>
             <select id="chon_khoa_phong_ton_kho" name="khoa_phong" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                 <option value="">-- Vui lòng chọn Khoa / Phòng --</option>
@@ -22,18 +25,25 @@
                 {% endfor %}
             </select>
         </div>
+
+        <div class="xl:col-span-3">
+            <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Tìm theo tên vật tư</label>
+            <input type="text" name="q" value="{{ q_value }}" placeholder="Nhập tên vật tư..."
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
         
-        <div class="w-56">
+        <div class="xl:col-span-2">
             <label class="block text-gray-700 text-xs font-bold mb-2 uppercase">Trạng thái</label>
             <select name="trang_thai" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                 <option value="tat_ca" {% if trang_thai_value == 'tat_ca' %}selected{% endif %}>Tất cả trạng thái</option>
                 <option value="hoat_dong" {% if trang_thai_value == 'hoat_dong' %}selected{% endif %}>Đang hoạt động (Tốt)</option>
+                <option value="het_ton" {% if trang_thai_value == 'het_ton' %}selected{% endif %}>Hết tồn kho</option>
                 <option value="hu_hong" {% if trang_thai_value == 'hu_hong' %}selected{% endif %}>Hư hỏng</option>
             </select>
         </div>
 
-        <div class="flex gap-2">
-            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg shadow-sm text-sm transition">
+        <div class="xl:col-span-1">
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm text-sm transition whitespace-nowrap">
                 <i class="fas fa-search mr-1"></i> Tra cứu
             </button>
         </div>
@@ -59,8 +69,8 @@
                 {% else %}
                     {% for ton in danh_sach_ton %}
                         
-                        {% if ton.so_luong > 0 and trang_thai_value != 'hu_hong' %}
-                        <tr class="hover:bg-amber-50 transition duration-150 text-gray-700">
+                        {% if trang_thai_value != 'hu_hong' %}
+                        <tr class="{% if ton.so_luong == 0 %}bg-red-50 hover:bg-red-100{% else %}hover:bg-amber-50{% endif %} transition duration-150 text-gray-700">
                             <td class="px-5 py-4 whitespace-no-wrap text-center font-medium">{{ forloop.counter }}</td>
                             <td class="px-5 py-4 whitespace-no-wrap font-mono text-gray-600">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>
                             <td class="px-5 py-4 font-bold text-teal-700">{{ ton.vat_tu.ten_vat_tu }}</td>
@@ -72,20 +82,24 @@
                                 {% endif %}
                             </td>
                             <td class="px-5 py-4 whitespace-no-wrap text-center">
-                                <span class="bg-green-100 text-green-800 py-1 px-3 rounded-full text-sm font-bold border border-green-200">{{ ton.so_luong }}</span>
+                                <span class="{% if ton.so_luong == 0 %}bg-red-100 text-red-700 border-red-200{% else %}bg-green-100 text-green-800 border-green-200{% endif %} py-1 px-3 rounded-full text-sm font-bold border">{{ ton.so_luong }}</span>
                             </td>
                             <td class="px-5 py-4 whitespace-no-wrap text-center flex justify-center items-center space-x-2">
+                                {% if ton.so_luong > 0 %}
                                 <button onclick="moPopupBaoHong('{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }}', '{{ ton.so_luong }}', '{{ kp_value }}')" class="bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-2 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center border border-red-200" title="Báo hỏng vật tư">
                                     <i class="fas fa-heart-broken mr-1"></i> Hỏng
                                 </button>
                                 <button onclick="moPopupTieuHao('{{ ton.vat_tu.id }}', '{{ ton.vat_tu.ten_vat_tu|escapejs }}', '{{ ton.so_luong }}', '{{ kp_value }}', 'tot')" class="bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white px-2 py-1.5 rounded shadow-sm text-xs font-bold transition flex items-center border border-purple-200" title="Xuất mang đi sử dụng">
                                     <i class="fas fa-box-open mr-1"></i> Xuất Tiêu Hao
                                 </button>
+                                {% else %}
+                                <span class="text-xs font-bold text-red-600 italic">Hết tồn kho</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endif %}
 
-                        {% if ton.so_luong_hong > 0 and trang_thai_value != 'hoat_dong' %}
+                        {% if ton.so_luong_hong > 0 and trang_thai_value != 'hoat_dong' and trang_thai_value != 'het_ton' %}
                         <tr class="bg-gray-100 text-gray-600 border-t-0 hover:bg-gray-200 transition">
                             <td class="px-5 py-3 whitespace-no-wrap text-center"></td>
                             <td class="px-5 py-3 whitespace-no-wrap font-mono">{{ ton.vat_tu.ma_vat_tu|default:"---" }}</td>

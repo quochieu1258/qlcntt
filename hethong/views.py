@@ -1580,26 +1580,30 @@ def ton_kho_khoa_phong_view(request):
 
     kp_id = request.GET.get('khoa_phong', '')
     trang_thai = request.GET.get('trang_thai', 'tat_ca') # Mặc định là tất cả
+    query = request.GET.get('q', '').strip()
     
     khoa_phongs = KhoaPhong.objects.all().order_by('ten_khoa_phong')
     
     danh_sach_ton = []
     if kp_id:
         danh_sach_ton = TonKhoKhoaPhong.objects.filter(khoa_phong_id=kp_id).select_related('vat_tu').order_by('vat_tu__ten_vat_tu')
+
+        if query:
+            danh_sach_ton = danh_sach_ton.filter(vat_tu__ten_vat_tu__unaccent__icontains=query)
         
         # Xử lý Lọc theo Trạng Thái
         if trang_thai == 'hoat_dong':
             danh_sach_ton = danh_sach_ton.filter(so_luong__gt=0)
+        elif trang_thai == 'het_ton':
+            danh_sach_ton = danh_sach_ton.filter(so_luong=0)
         elif trang_thai == 'hu_hong':
             danh_sach_ton = danh_sach_ton.filter(so_luong_hong__gt=0)
-        else:
-            # Nếu Tất cả: Lấy những dòng có đồ tốt hoặc đồ hỏng
-            danh_sach_ton = danh_sach_ton.filter(Q(so_luong__gt=0) | Q(so_luong_hong__gt=0))
 
     return render(request, 'tonkho_khoaphong.html', {
         'khoa_phongs': khoa_phongs,
         'kp_value': kp_id,
         'trang_thai_value': trang_thai, # Trả về cho UI
+        'q_value': query,
         'danh_sach_ton': danh_sach_ton
     })
 
